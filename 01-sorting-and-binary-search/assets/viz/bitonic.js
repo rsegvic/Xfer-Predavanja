@@ -87,9 +87,10 @@ Viz.register('bitonic', function (root, opts) {
     // položaj izvođenja i trenutne vrijednosti
     const px = idx === 0 ? 52 : stages[idx - 1].x1 + 3;
     net.appendChild(s('line', { x1: px, y1: 8, x2: px, y2: Hn - 20, stroke: C.violet, 'stroke-width': 1.5, 'stroke-dasharray': '4 3' }));
+    const pillX = idx === 0 ? px + 3 : px - 27;   // pločice s vrijednostima stoje iznad već izvedene razine
     for (let i = 0; i < n; i++) {
-      net.appendChild(s('rect', { x: px + 3, y: wy(i) - 8, width: 22, height: 16, rx: 4, fill: C.violetSoft }));
-      net.appendChild(text(px + 14, wy(i), a[i], { 'font-size': 11, fill: C.ink, 'font-weight': 600 }));
+      net.appendChild(s('rect', { x: pillX, y: wy(i) - 8, width: 22, height: 16, rx: 4, fill: C.violetSoft }));
+      net.appendChild(text(pillX + 11, wy(i), a[i], { 'font-size': 11, fill: C.ink, 'font-weight': 600 }));
     }
     // stupci: stanje niza
     clear(bars);
