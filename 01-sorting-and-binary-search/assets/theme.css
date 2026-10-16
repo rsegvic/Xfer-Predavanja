@@ -245,3 +245,11 @@
   .backgrounds { background-color: var(--r-background-color); }
   .reveal .deck-footer { display: none; }
 }
+
+/* tablice zadataka */
+.reveal table.tasks { font-size: 0.6em; width: 100%; }
+.reveal table.tasks th[colspan] { background: #eef4fc; color: var(--c-blue); font-size: 0.95em; letter-spacing: 0.02em; }
+.reveal table.tasks td, .reveal table.tasks th { padding: 0.18em 0.6em; vertical-align: top; }
+.reveal table.tasks td:first-child { white-space: nowrap; font-weight: 600; }
+.reveal table.tasks td.num { white-space: nowrap; }
+.reveal table.tasks td:last-child { color: var(--ink-2); }

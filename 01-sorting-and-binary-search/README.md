@@ -18,7 +18,7 @@ Tipke: `→` sljedeće poglavlje, `↓` sljedeći slajd u poglavlju, `Space` red
 4. **Ternarno pretraživanje** — algoritam, usporedba s binarnim, realni interval, ekstremi unimodalnih funkcija
 5. **Bitonično sortiranje** — mreže komparatora, bitonični nizovi, polučistač, cijela mreža, složenost
 6. **Koje usporedbe određuju poredak?** — nužne usporedbe susjeda, minimalni skup, donja granica ⌈log₂ n!⌉
-7. **Zaključak** — sažetak, zadaci za vježbu, literatura
+7. **Zaključak** — sažetak, zadaci za vježbu (33 zadatka s Codeforcesa i AtCodera, s natuknicama; popis je i u [zadaci.md](zadaci.md)), literatura
 
 Poglavlja 1, 2 i 4 prate materijale [NatPro — X.FER](https://materijali.xfer.hr/docs/sortiranje-i-pretrazivanje/sortiranje) (autorica Maja Milas); poglavlja 3, 5 i 6 su proširenja.
 
@@ -26,6 +26,7 @@ Poglavlja 1, 2 i 4 prate materijale [NatPro — X.FER](https://materijali.xfer.h
 
 ```
 index.html            svi slajdovi (HTML)
+zadaci.md             popis zadataka za vježbu s natuknicama (isti kao na slajdovima)
 assets/theme.css      izgled prezentacije i vizualizacija
 assets/main.js        pokretanje reveal.js-a i vizualizacija
 assets/viz/common.js  pomoćne funkcije za vizualizacije (SVG, boje, gumbi)
