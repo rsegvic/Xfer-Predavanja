@@ -1,0 +1,247 @@
+/* ==========================================================================
+   Tema predavanja (reveal.js) — svijetla, prilagođena projektoru.
+   Boje vizualizacija su u CSS varijablama ispod i u assets/viz/common.js.
+   ========================================================================== */
+:root {
+  --r-background-color: #fcfcfb;
+  --r-main-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --r-main-font-size: 30px;
+  --r-main-color: #1f1f1d;
+  --r-block-margin: 14px;
+  --r-heading-margin: 0 0 22px 0;
+  --r-heading-font: var(--r-main-font);
+  --r-heading-color: #0b0b0b;
+  --r-heading-line-height: 1.15;
+  --r-heading-letter-spacing: -0.01em;
+  --r-heading-text-transform: none;
+  --r-heading-text-shadow: none;
+  --r-heading-font-weight: 700;
+  --r-heading1-size: 2.1em;
+  --r-heading2-size: 1.45em;
+  --r-heading3-size: 1.12em;
+  --r-heading4-size: 1em;
+  --r-code-font: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --r-link-color: #1c5cab;
+  --r-link-color-dark: #104281;
+  --r-link-color-hover: #2a78d6;
+  --r-selection-background-color: #b7d3f6;
+  --r-selection-color: #0b0b0b;
+  --r-overlay-element-bg-color: 0, 0, 0;
+  --r-overlay-element-fg-color: 240, 240, 240;
+
+  /* paleta vizualizacija (provjerena na razlučivost za daltonizam) */
+  --c-blue: #2a78d6;   --c-blue-soft: #cde2fb;
+  --c-orange: #eb6834; --c-orange-soft: #fbd9cc;
+  --c-aqua: #1baf7a;   --c-aqua-soft: #c9efe0;
+  --c-yellow: #eda100; --c-yellow-soft: #fde8b3;
+  --c-violet: #6250d6; --c-violet-soft: #ddd8f7;
+  --c-red: #e34948;    --c-red-soft: #f9d4d3;
+  --c-green: #008300;  --c-magenta: #e87ba4;
+  --ink: #0b0b0b; --ink-2: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --gray: #c3c2b7; --surface: #ffffff; --surface-2: #f3f2ee;
+  --chapter-bg: #0f2a4a;
+}
+
+.reveal-viewport { background: var(--r-background-color); }
+
+.reveal {
+  font-family: var(--r-main-font);
+  font-size: var(--r-main-font-size);
+  font-weight: normal;
+  color: var(--r-main-color);
+}
+.reveal ::selection { color: var(--r-selection-color); background: var(--r-selection-background-color); text-shadow: none; }
+
+.reveal .slides { text-align: left; }
+.reveal .slides section, .reveal .slides section > section { line-height: 1.35; font-weight: inherit; padding: 8px 0; }
+
+/* ---------- naslovi ---------- */
+.reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+  margin: var(--r-heading-margin);
+  color: var(--r-heading-color);
+  font-family: var(--r-heading-font);
+  font-weight: var(--r-heading-font-weight);
+  line-height: var(--r-heading-line-height);
+  letter-spacing: var(--r-heading-letter-spacing);
+  text-transform: var(--r-heading-text-transform);
+  word-wrap: break-word;
+}
+.reveal h1 { font-size: var(--r-heading1-size); }
+.reveal h2 { font-size: var(--r-heading2-size); }
+.reveal h3 { font-size: var(--r-heading3-size); margin-bottom: 10px; }
+.reveal h4 { font-size: var(--r-heading4-size); margin-bottom: 8px; }
+.reveal h2 + h3 { margin-top: -8px; }
+.reveal h1:last-child, .reveal h2:last-child, .reveal h3:last-child { margin-bottom: 0; }
+
+.reveal .kicker {
+  display: block; font-size: 0.6em; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--c-blue); margin-bottom: 6px;
+}
+
+/* tamne pozadine (poglavlja) */
+.reveal section.has-dark-background, .reveal section.has-dark-background h1,
+.reveal section.has-dark-background h2, .reveal section.has-dark-background h3,
+.reveal section.has-dark-background p { color: #fff; }
+.reveal section.has-dark-background .kicker { color: #9ec5f4; }
+.reveal section.has-dark-background a { color: #9ec5f4; }
+.reveal section.chapter, .reveal section.title-slide { box-sizing: border-box; }
+.reveal section.chapter { display: flex !important; flex-direction: column; justify-content: center; height: 100%; }
+.reveal section.chapter h1 { font-size: 2.6em; }
+.reveal section.chapter p { font-size: 1.1em; color: #c3d6ee; max-width: 80%; }
+.reveal section.chapter ol { color: #dbe6f5; }
+
+/* ---------- tekst ---------- */
+.reveal p { margin: var(--r-block-margin) 0; line-height: 1.35; }
+.reveal strong, .reveal b { font-weight: 700; }
+.reveal em { font-style: italic; }
+.reveal i { font-style: italic; }
+.reveal ol, .reveal ul { display: block; text-align: left; margin: 0.3em 0 0.3em 1.1em; }
+.reveal ol { list-style-type: decimal; } .reveal ul { list-style-type: disc; }
+.reveal ul ul { list-style-type: circle; }
+.reveal ul ul, .reveal ul ol, .reveal ol ol, .reveal ol ul { display: block; margin-left: 1.1em; }
+.reveal li { margin: 0.18em 0; }
+.reveal li > p { margin: 0.2em 0; }
+.reveal sup { vertical-align: super; font-size: 0.7em; }
+.reveal sub { vertical-align: sub; font-size: 0.7em; }
+.reveal small { display: inline-block; font-size: 0.7em; line-height: 1.25; vertical-align: top; }
+.reveal .small { font-size: 0.82em; }
+.reveal .tiny { font-size: 0.66em; }
+.reveal .muted { color: var(--muted); }
+.reveal .center { text-align: center; }
+.reveal .mt { margin-top: 18px; }
+.reveal .m { font-family: "Cambria", "Georgia", "Times New Roman", serif; font-style: italic; }
+.reveal .mr { font-family: "Cambria", "Georgia", "Times New Roman", serif; }
+.reveal .m sub, .reveal .mr sub { font-style: normal; }
+.reveal .eq { display: block; text-align: center; font-size: 1.1em; margin: 14px 0; font-family: "Cambria", "Georgia", "Times New Roman", serif; }
+.reveal kbd {
+  font-family: var(--r-code-font); font-size: 0.75em; padding: 1px 7px; border-radius: 5px;
+  border: 1px solid var(--gray); border-bottom-width: 2px; background: var(--surface); color: var(--ink);
+}
+.reveal hr { border: 0; border-top: 1px solid var(--grid); margin: 16px 0; }
+
+.reveal a { color: var(--r-link-color); text-decoration: none; transition: color 0.15s ease; }
+.reveal a:hover { color: var(--r-link-color-hover); text-shadow: none; border: none; }
+
+/* ---------- raspored ---------- */
+.reveal .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: start; }
+.reveal .cols.w-2-3 { grid-template-columns: 2fr 3fr; }
+.reveal .cols.w-3-2 { grid-template-columns: 3fr 2fr; }
+.reveal .cols.w-1-2 { grid-template-columns: 1fr 2fr; }
+.reveal .cols.w-2-1 { grid-template-columns: 2fr 1fr; }
+.reveal .cols > * > :first-child { margin-top: 0; }
+
+/* ---------- okviri ---------- */
+.reveal .callout {
+  border-left: 6px solid var(--c-blue); background: var(--surface-2);
+  padding: 10px 18px; margin: 14px 0; border-radius: 0 8px 8px 0; font-size: 0.86em;
+}
+.reveal .callout > :first-child { margin-top: 0; }
+.reveal .callout > :last-child { margin-bottom: 0; }
+.reveal .callout .label {
+  display: block; font-weight: 700; font-size: 0.78em; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--ink-2); margin-bottom: 2px;
+}
+.reveal .callout.tip { border-color: var(--c-aqua); }
+.reveal .callout.warn { border-color: var(--c-orange); }
+.reveal .callout.note { border-color: var(--c-violet); }
+.reveal .callout.thm { border-color: var(--c-blue); background: #eef4fc; }
+.reveal .callout.key { border-color: var(--c-yellow); background: #fff8e6; }
+
+/* ---------- kod ---------- */
+.reveal pre {
+  display: block; position: relative; width: 100%; margin: 12px 0; text-align: left;
+  font-size: 0.56em; font-family: var(--r-code-font); line-height: 1.38; word-wrap: break-word;
+  box-shadow: none; border: 1px solid var(--grid); border-radius: 8px; background: var(--surface-2);
+}
+.reveal pre.compact { font-size: 0.5em; }
+.reveal code { font-family: var(--r-code-font); text-transform: none; tab-size: 4; background: var(--surface-2); padding: 0 0.3em; border-radius: 4px; font-size: 0.92em; }
+.reveal pre code { display: block; padding: 12px 16px; overflow: auto; max-height: 560px; word-wrap: normal; background: transparent; font-size: 1em; }
+.reveal .code-wrapper { white-space: normal; }
+.reveal .code-wrapper code { white-space: pre; }
+
+/* highlight.js — svijetla shema */
+.hljs { color: #1f1f1d; background: transparent; }
+.hljs-keyword, .hljs-type, .hljs-built_in, .hljs-selector-tag { color: #8a2d9f; }
+.hljs-string, .hljs-regexp { color: #0a7d4a; }
+.hljs-number, .hljs-literal { color: #b25400; }
+.hljs-comment, .hljs-quote { color: #7a786f; font-style: italic; }
+.hljs-title, .hljs-function .hljs-title, .hljs-title.function_ { color: #1c5cab; }
+.hljs-meta { color: #898781; }
+.hljs-variable, .hljs-template-variable, .hljs-attr { color: #1f1f1d; }
+
+/* ---------- tablice ---------- */
+.reveal table { margin: 10px 0; border-collapse: collapse; border-spacing: 0; font-size: 0.8em; }
+.reveal table th { font-weight: 700; background: var(--surface-2); }
+.reveal table th, .reveal table td { text-align: left; padding: 0.25em 0.7em; border-bottom: 1px solid var(--grid); }
+.reveal table td.num, .reveal table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.reveal table td.num { white-space: nowrap; }
+.reveal table.center { margin-left: auto; margin-right: auto; }
+
+/* ---------- slike ---------- */
+.reveal img, .reveal video, .reveal iframe { max-width: 95%; max-height: 95%; }
+
+/* ---------- vizualizacije ---------- */
+.reveal .viz {
+  background: var(--surface); border: 1px solid var(--grid); border-radius: 12px;
+  padding: 10px 12px 8px; font-size: 0.6em; color: var(--ink-2); line-height: 1.3;
+}
+.reveal .viz.narrow { max-width: 1000px; margin-left: auto; margin-right: auto; }
+.reveal .viz svg { width: 100%; height: auto; display: block; overflow: visible; font-family: var(--r-main-font); }
+.reveal .viz svg text { font-family: var(--r-main-font); }
+.reveal .viz .bar { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-bottom: 6px; }
+.reveal .viz .bar .sep { width: 1px; height: 1.4em; background: var(--grid); margin: 0 4px; }
+.reveal .viz .bar label { color: var(--ink-2); }
+.reveal .viz button {
+  font: inherit; font-size: 0.95em; padding: 4px 13px; border-radius: 999px; line-height: 1.3;
+  border: 1px solid var(--gray); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.reveal .viz button:hover { border-color: var(--c-blue); color: var(--c-blue); }
+.reveal .viz button.primary { background: var(--c-blue); border-color: var(--c-blue); color: #fff; }
+.reveal .viz button.primary:hover { background: #1c5cab; color: #fff; }
+.reveal .viz button.active { background: var(--c-blue-soft); border-color: var(--c-blue); color: #104281; }
+.reveal .viz button:disabled { opacity: 0.4; cursor: default; }
+.reveal .viz select, .reveal .viz input[type=number], .reveal .viz input[type=text] {
+  font: inherit; font-size: 0.95em; padding: 3px 8px; border-radius: 6px; border: 1px solid var(--gray);
+  background: var(--surface); color: var(--ink);
+}
+.reveal .viz input[type=number] { width: 4.5em; }
+.reveal .viz .status { font-size: 1em; min-height: 1.45em; margin-top: 6px; color: var(--ink); }
+.reveal .viz .status.ok { color: var(--c-green); font-weight: 600; }
+.reveal .viz .stats { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 6px; }
+.reveal .viz .stat { background: var(--surface-2); border-radius: 6px; padding: 2px 10px; white-space: nowrap; }
+.reveal .viz .stat b { color: var(--ink); }
+.reveal .viz .legend { display: flex; gap: 6px 16px; flex-wrap: wrap; font-size: 0.9em; color: var(--ink-2); margin-top: 6px; }
+.reveal .viz .legend span::before {
+  content: ""; display: inline-block; width: 12px; height: 12px; border-radius: 3px;
+  margin-right: 5px; vertical-align: -1px; background: var(--sw, var(--gray));
+}
+.reveal .viz .hint { font-size: 0.9em; color: var(--muted); margin-top: 4px; }
+.reveal .viz .mono { font-family: var(--r-code-font); }
+.reveal .viz .bits { font-family: var(--r-code-font); font-size: 1.15em; letter-spacing: 0.12em; color: var(--ink); }
+.reveal .viz .bits .one { color: var(--c-aqua); } .reveal .viz .bits .zero { color: var(--c-red); }
+.reveal .viz table { font-size: 1em; margin: 4px 0; }
+.reveal .viz table th, .reveal .viz table td { padding: 0.15em 0.6em; }
+.reveal .viz .perm-list { display: flex; flex-wrap: wrap; gap: 4px 10px; font-family: var(--r-code-font); font-size: 0.95em; }
+.reveal .viz .perm-list span { background: var(--surface-2); padding: 1px 6px; border-radius: 4px; }
+
+/* fiksna podnožna traka (nije skalirana s prezentacijom) */
+.reveal .deck-footer {
+  position: absolute; bottom: 10px; left: 16px; font-size: 13px; color: var(--muted); z-index: 10;
+}
+.reveal .slide-number { font-size: 13px; background: transparent; color: var(--muted); right: auto; left: 50%; transform: translateX(-50%); bottom: 8px; }
+.reveal .controls { color: var(--c-blue); }
+.reveal .progress { background: rgba(0, 0, 0, 0.12); color: var(--c-blue); }
+
+/* uvodni slajd */
+.reveal section.title-slide { display: flex !important; flex-direction: column; justify-content: center; height: 100%; }
+.reveal section.title-slide h1 { font-size: 2.8em; margin-bottom: 10px; }
+.reveal section.title-slide .sub { font-size: 1.2em; color: var(--ink-2); margin: 0 0 30px; }
+.reveal section.title-slide .meta { font-size: 0.75em; color: var(--muted); }
+
+/* pomoć za tipkovnicu */
+.reveal .keys { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: baseline; font-size: 0.85em; }
+
+@media print {
+  .backgrounds { background-color: var(--r-background-color); }
+  .reveal .deck-footer { display: none; }
+}

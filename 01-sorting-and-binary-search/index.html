@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sortiranje i pretraživanje — predavanje</title>
+<link rel="stylesheet" href="vendor/reveal/reset.css">
+<link rel="stylesheet" href="vendor/reveal/reveal.css">
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ===================================================================== -->
+<!-- 0. UVOD                                                                -->
+<!-- ===================================================================== -->
+<section>
+  <section class="title-slide">
+    <span class="kicker">Strukture podataka i algoritmi · Predavanje 1</span>
+    <h1>Sortiranje i pretraživanje</h1>
+    <p class="sub">Binarno i ternarno pretraživanje, pretraživanje kao postavljanje pitanja,<br>bitonično sortiranje i koliko usporedbi određuje poredak</p>
+    <p class="meta">Temeljeno na materijalima <a href="https://materijali.xfer.hr/docs/sortiranje-i-pretrazivanje/sortiranje">NatPro — X.FER</a> (autorica Maja Milas), prošireno.<br>
+    Navigacija: <kbd>→</kbd> sljedeći slajd, <kbd>↓</kbd> dublje u poglavlje, <kbd>Esc</kbd> pregled svih slajdova.</p>
+  </section>
+
+  <section>
+    <h2>Kako koristiti ove slajdove</h2>
+    <div class="cols">
+      <div>
+        <div class="keys">
+          <kbd>→</kbd> <span>sljedeće poglavlje (vodoravno)</span>
+          <kbd>↓</kbd> <span>sljedeći slajd unutar poglavlja (okomito)</span>
+          <kbd>Space</kbd> <span>sljedeći slajd, redom kroz sve</span>
+          <kbd>Esc</kbd> <span>pregled svih slajdova (mapa predavanja)</span>
+          <kbd>F</kbd> <span>cijeli zaslon</span>
+          <kbd>S</kbd> <span>prozor za predavača s bilješkama</span>
+          <kbd>Alt</kbd>+klik <span>uvećaj dio slajda</span>
+          <kbd>?</kbd> <span>sve tipke</span>
+        </div>
+      </div>
+      <div>
+        <p>Vizualizacije su <strong>interaktivne</strong>: gumbi <em>Korak</em> i <em>Pokreni</em> izvode algoritam, a na mnoge elemente može se kliknuti.</p>
+        <p class="small muted">Svaki slajd ima svoj URL (npr. <code>#/3/2</code>), pa se na njega može vratiti ili ga podijeliti. Stranica radi i bez interneta: sve je u jednoj mapi.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Plan predavanja</h2>
+    <ol>
+      <li><strong>Sortiranje</strong> — od <span class="m">O(n²)</span> do <span class="m">O(n log n)</span>, counting sort, ugrađeni <code>sort</code></li>
+      <li><strong>Binarno pretraživanje</strong> — u nizu, po rješenju, po monotonom uvjetu</li>
+      <li><strong>Pretraživanje kao postavljanje pitanja</strong> — bitovi, kodovi, binarna stabla, entropija</li>
+      <li><strong>Ternarno pretraživanje</strong> — i zašto nije brže od binarnog</li>
+      <li><strong>Bitonično sortiranje</strong> — mreže komparatora i paralelno sortiranje</li>
+      <li><strong>Koje usporedbe određuju poredak?</strong> — nužne usporedbe i donja granica <span class="m">log₂ n!</span></li>
+    </ol>
+    <p class="small muted">Crvena nit: <em>usporedba je pitanje s odgovorom DA/NE, a svaki odgovor donosi najviše jedan bit.</em></p>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 1. SORTIRANJE                                                          -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 1</span>
+    <h1>Sortiranje</h1>
+    <p>Složiti podatke u smisleni poredak prema nekom kriteriju — i to brzo.</p>
+  </section>
+
+  <section>
+    <h2>Zašto sortirati?</h2>
+    <p>Algoritme za sortiranje koristimo kako bismo složili podatke u smisleni poredak prema nekom kriteriju. Primjena je puno šira od natjecateljskog programiranja: sortiranje je <strong>ključan preduvjet</strong> za mnoge druge algoritme — binarno pretraživanje je prvi primjer koji ćemo vidjeti.</p>
+    <ul>
+      <li>Koliko brzo možemo sortirati? Koliko usporedbi je <em>nužno</em>?</li>
+      <li>Trebamo li uopće uspoređivati elemente?</li>
+      <li>Kada se isplati pisati vlastiti sort, a kada koristiti ugrađeni?</li>
+    </ul>
+    <div class="callout key"><span class="label">Dogovor</span>
+      Kroz cijelo predavanje brojit ćemo <strong>usporedbe</strong> dvaju elemenata. Usporedba je jedino što algoritam „vidi” o podacima.</div>
+  </section>
+
+  <section>
+    <h2><span class="m">O(n²)</span> algoritmi: bubble sort</h2>
+    <div class="cols w-2-3">
+      <div>
+        <p class="small">Algoritam se sastoji od <span class="m">n</span> prolaza. U svakom prolazu uspoređujemo <strong>susjedne</strong> članove i zamijenimo ih ako nisu u poretku. Nakon prvog prolaza najveći je član na svom mjestu, nakon drugog i drugi najveći, …</p>
+<pre><code class="language-cpp" data-trim>
+for (int i = 0; i &lt; n; i++) {
+    for (int j = 0; j &lt; n - 1; j++) {
+        if (array[j] &gt; array[j+1]) {
+            swap(array[j], array[j+1]);
+        }
+    }
+}
+</code></pre>
+        <p class="small">Kratak i razumljiv, ali za <span class="m">n = 10⁵</span> kvadratna složenost znači oko 100 sekundi — predaleko od vremenskog ograničenja.</p>
+      </div>
+      <div class="viz" data-viz="bubble" data-n="10"></div>
+    </div>
+    <aside class="notes">Pustiti vizualizaciju do kraja: 45 usporedbi za n = 10. Najaviti: kasnije ćemo pokazati da je nužno samo 22. Vizualizacija preskače već složeni kraj niza (optimizirana varijanta); kod na slajdu je najjednostavniji oblik.</aside>
+  </section>
+
+  <section>
+    <h2>Može li brže? <span class="m">O(n log n)</span> algoritmi</h2>
+    <ul>
+      <li><strong>Merge sort</strong> — rekurzivno podijeli niz na dvije polovice, sortira svaku zasebno, a potom ih <em>spoji</em> (merge) u jedan sortirani niz.</li>
+      <li><strong>Heap sort</strong> — radi nad strukturom <em>binary heap</em>; sličan selection sortu, ali najveći element pronalazi u <span class="m">O(log n)</span>.</li>
+      <li><strong>Quick sort</strong> — odabere referentni element (<em>pivot</em>), ostale rasporedi lijevo/desno od njega i rekurzivno sortira obje strane. Varijante se razlikuju po izboru pivota.</li>
+    </ul>
+    <p>Prekid unutarnje petlje bubble sorta kad nema zamjena pomaže u praksi, ali najgori slučaj ostaje <span class="m">O(n²)</span>. Ovi algoritmi su u najgorem (ili očekivanom) slučaju <span class="m">O(n log n)</span>.</p>
+    <div class="callout tip"><span class="label">Savjet</span>
+      Prije nego počnete pisati kod, dobro razmislite o složenosti. Tražite rješenje koje prolazi ograničenja, a zahtijeva <em>najmanje vremena pisanja</em>.</div>
+  </section>
+
+  <section>
+    <h2>Može li još brže? Counting sort</h2>
+    <div class="cols w-3-2">
+      <div>
+        <p class="small">Za algoritme koji <strong>uspoređuju</strong> elemente nije moguće bolje od <span class="m">O(n log n)</span> — to ćemo <em>dokazati</em> na kraju predavanja. Brže je moguće samo ako <strong>ne uspoređujemo</strong>, nego iskoristimo dodatno znanje o podacima.</p>
+        <p class="small"><strong>Counting sort:</strong> ako su svi brojevi iz malog intervala, npr. <span class="m">[0, 100]</span>, brojimo koliko se puta svaki pojavio, a zatim ih ispišemo redom.</p>
+        <p class="small">Primjer: za niz <span class="mr">[2, 44, 23, 25, 88, 44, 23]</span> na poziciji 44 pomoćne liste piše 2, jer se broj 44 pojavljuje dva puta.</p>
+        <p class="small">Složenost <span class="m">O(n + K)</span>, gdje je <span class="m">K</span> raspon vrijednosti. Mana: memorija — izvedivo za brojeve do otprilike <span class="m">10⁷</span>, a zadaci često imaju puno veće.</p>
+      </div>
+      <div>
+<pre><code class="language-cpp" data-trim>
+int lista[101]; // na početku nule
+for (int i = 0; i &lt; n; i++) {
+    cin &gt;&gt; x;   // brojevi koje unosimo
+    lista[x]++;
+}
+
+// ispis sortiranog niza
+for (int i = 0; i &lt;= 100; i++) {
+    for (int j = 0; j &lt; lista[i]; j++)
+        cout &lt;&lt; i &lt;&lt; ", ";
+}
+</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ugrađeni sort (C++)</h2>
+    <p>U praksi gotovo uvijek koristimo <strong>gotove implementacije</strong> — cilj je uštedjeti vrijeme za razmišljanje. <code>std::sort</code> je introsort (quick sort + heap sort + insertion sort), <span class="m">O(n log n)</span> u najgorem slučaju.</p>
+<pre><code class="language-cpp" data-trim>
+vector&lt;int&gt; v = {4,2,5,3,8,5,8,3};
+sort(v.begin(), v.end());
+
+int n = 8;
+int a[] = {4,2,5,3,8,5,8,3};
+sort(a, a + n);
+
+string s = "sladoled";
+sort(s.begin(), s.end()); // addellos
+</code></pre>
+    <p class="small"><code>reverse(first, last)</code> okreće poredak elemenata na pozicijama <span class="mr">[first, last⟩</span> u <span class="m">O(n)</span>: <code>reverse(v.begin()+1, v.begin()+5)</code> pretvara <span class="mr">1,2,3,4,5,6,7,8</span> u <span class="mr">1,5,4,3,2,6,7,8</span>.</p>
+  </section>
+
+  <section>
+    <h2>Komparator</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Treći argument funkcije <code>sort</code> je <strong>operator usporedbe</strong> (komparator). C++ parove sortira prvo po prvom, pa po drugom elementu. Želimo li drugačiji kriterij, pišemo <strong>vanjski komparator</strong>: funkciju koja za <span class="m">a</span> i <span class="m">b</span> vraća <code>true</code> ako <span class="m">a</span> mora doći <em>prije</em> <span class="m">b</span>.</p>
+        <p class="small">Primjer desno sortira parove po <strong>drugom</strong> elementu, a pri jednakosti po prvom.</p>
+        <div class="callout warn"><span class="label">Oprez</span>
+          Komparator mora biti <em>strogi slabi poredak</em>: <code>comp(a, a)</code> mora biti <code>false</code>. Pišite <code>&lt;</code>, nikad <code>&lt;=</code>.</div>
+      </div>
+      <div>
+<pre><code class="language-cpp" data-trim>
+#include &lt;bits/stdc++.h&gt;
+#define pii pair&lt;int,int&gt;
+using namespace std;
+
+bool comp(pii a, pii b) {
+    if (a.second == b.second)
+        return a.first &lt; b.first;
+    return a.second &lt; b.second;
+}
+
+int main() {
+    vector&lt;pii&gt; v; // ... dodavanje parova
+    sort(v.begin(), v.end(), comp);
+    return 0;
+}
+</code></pre>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 2. BINARNO PRETRAŽIVANJE                                               -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 2</span>
+    <h1>Binarno pretraživanje</h1>
+    <p>Dana je sortirana lista od <span class="m">n</span> brojeva. Nalazi li se u njoj broj <span class="m">x</span>?</p>
+  </section>
+
+  <section>
+    <h2>Igra pogađanja broja</h2>
+    <p>Prva ideja: prođi kroz sve elemente i usporedi svaki s <span class="m">x</span> — <span class="m">O(n)</span>. Pomaže li nam to što je niz <strong>sortiran</strong>?</p>
+    <p>Sigurno ste igrali igru u kojoj osoba zamisli broj od 1 do 100, a vi pogađate; nakon svakog pokušaja kaže je li njezin broj <em>veći</em> ili <em>manji</em>. Optimalno: prvo 50. Ako je veći — 75. Svakim pitanjem problem se <strong>prepolovi</strong>.</p>
+    <div class="callout thm"><span class="label">Ideja</span>
+      Ako se broj kandidata svakim korakom prepolovi, nakon <span class="m">k</span> koraka ostaje ih <span class="m">n / 2<sup>k</sup></span>. Do jednog kandidata treba <span class="m">k = ⌈log₂ n⌉</span> koraka: za <span class="m">n = 100</span> to je 7, za <span class="m">n = 10⁶</span> samo 20, za <span class="m">n = 10⁹</span> tek 30.</div>
+    <p class="small">Isto radimo pri traženju riječi u rječniku ili stranice u knjizi.</p>
+  </section>
+
+  <section>
+    <h2>Binarno pretraživanje u sortiranom nizu</h2>
+    <p class="small">U svakom koraku usporedimo <span class="m">x</span> s elementom na sredini intervala <span class="mr">[l, r]</span>. Ako je <span class="m">x</span> manji, nastavljamo u lijevoj polovici; ako je veći, u desnoj. Isprobajte prisutan i odsutan broj.</p>
+    <div class="viz" data-viz="binsearch" data-n="15"></div>
+    <p class="small muted">Sivo = isključeno iz pretrage, plavo = još moguće, narančasto = sredina koju upravo uspoređujemo.</p>
+  </section>
+
+  <section>
+    <h2>Implementacija</h2>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>Klasična petlja:</strong> <span class="m">l</span> i <span class="m">r</span> su granice intervala koji još pretražujemo.</p>
+<pre><code class="language-cpp" data-trim>
+int l = 0, r = n - 1;
+
+while (l &lt;= r) {
+    int mid = (l + r) / 2;
+    if (array[mid] == x) {
+        // pronašli smo x na poziciji mid
+    }
+    if (array[mid] &gt; x) r = mid - 1;
+    else l = mid + 1;
+}
+</code></pre>
+      </div>
+      <div>
+        <p class="small"><strong>Varijanta s koracima:</strong> na početku radimo velike korake, a kako se približavamo odgovoru, koraci se prepolavljaju.</p>
+<pre><code class="language-cpp" data-trim>
+int k = 0; // trenutna pozicija u listi
+for (int b = n / 2; b &gt;= 1; b /= 2) {
+    // ako korakom ne bismo preskočili x,
+    // napravimo korak
+    while (k + b &lt; n &amp;&amp; array[k + b] &lt;= x) k += b;
+}
+if (array[k] == x) {
+    // pronašli smo x na poziciji k
+}
+</code></pre>
+      </div>
+    </div>
+    <p class="small">Obje varijante prepolove interval u svakom koraku: <span class="m">O(log₂ n)</span>. Varijantu s koracima zapamtite — u 3. poglavlju vidjet ćemo da ona <em>čita binarni zapis</em> tražene pozicije, bit po bit.</p>
+    <aside class="notes">U varijanti s koracima za n koji je potencija broja 2, petlja while izvrši se najviše jednom po koraku; b = n/2, n/4, ..., 1 su upravo težine bitova pozicije.</aside>
+  </section>
+
+  <section>
+    <h2>C++ funkcije: <code>lower_bound</code>, <code>upper_bound</code>, <code>equal_range</code></h2>
+    <p class="small">Standardna biblioteka ima gotove funkcije u logaritamskoj složenosti:</p>
+    <ul class="small">
+      <li><code>lower_bound</code> — iterator na prvu vrijednost koja je <strong>barem <span class="m">x</span></strong></li>
+      <li><code>upper_bound</code> — iterator na prvu vrijednost koja je <strong>veća od <span class="m">x</span></strong></li>
+      <li><code>equal_range</code> — oba iteratora odjednom; ako <span class="m">x</span> nema, oboje pokazuju na mjesto gdje bi bio</li>
+    </ul>
+<pre><code class="language-cpp" data-trim>
+vector&lt;int&gt; v = {5,5,5,6,6,6,7,7};
+
+auto lower = lower_bound(v.begin(), v.end(), 6);
+auto upper = upper_bound(v.begin(), v.end(), 6);
+
+cout &lt;&lt; "lower_bound: " &lt;&lt; (lower - v.begin()) &lt;&lt; '\n'; // 3
+cout &lt;&lt; "upper_bound: " &lt;&lt; (upper - v.begin()) &lt;&lt; '\n'; // 6
+// broj šestica = upper - lower = 3
+</code></pre>
+    <div class="callout warn"><span class="label">Oprez</span> Sve navedene funkcije podrazumijevaju da je niz <strong>sortiran</strong>. Ako nije, rezultat je besmislen (i nema greške!).</div>
+  </section>
+
+  <section>
+    <h2>Primjena: pretraživanje rješenja</h2>
+    <p class="small">Tražimo <strong>najmanju</strong> veličinu kvadratnog kaveza <span class="m">d</span> u kojoj su svi majmuni zadovoljni. Provjera za zadani <span class="m">d</span> je laka, ali isprobavanje <span class="m">d = 1, 2, 3, …</span> redom gotovo je uvijek presporo.</p>
+    <p class="small">Ključno: sve veličine do neke <strong>granične</strong> uvjet <em>ne</em> ispunjavaju, a sve veće ga ispunjavaju — uvjet je <strong>monoton</strong>. Binarno pretražujemo tu granicu po <span class="m">d</span>; u svakom koraku <em>provjerimo uvjet</em> umjesto da uspoređujemo brojeve.</p>
+    <div class="viz" data-viz="predicate" data-n="16"></div>
+    <p class="small muted">Lijeva granica je 1, desna neki veliki broj koji sigurno zadovoljava. Zadovoljava li <span class="m">mid</span>, pomičemo desnu granicu (želimo manje), inače lijevu.</p>
+  </section>
+
+  <section>
+    <h2>Primjena: maksimum funkcije</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Binarnu pretragu možemo koristiti i za traženje maksimuma funkcije koja prvo <strong>raste</strong>, a potom <strong>pada</strong>: vrijedi <span class="m">f(x) &lt; f(x+1)</span> za <span class="m">x &lt; k</span> i <span class="m">f(x) &gt; f(x+1)</span> za <span class="m">x ≥ k</span>. Tražimo <span class="m">k</span>.</p>
+        <p class="small">Uvjet <span class="m">f(x) &lt; f(x+1)</span> („još rastemo”) je monoton: vrijedi, vrijedi, …, pa prestaje vrijediti. To je isti oblik kao kod kaveza — binarno tražimo granicu.</p>
+        <div class="callout note"><span class="label">Primijetite</span>
+          Uzastopne vrijednosti funkcije ne smiju biti jednake; inače ne znamo na koju stranu nastaviti.</div>
+      </div>
+      <div>
+<pre><code class="language-cpp" data-trim>
+int x = -1;
+for (int b = z; b &gt;= 1; b /= 2) {
+    while (f(x + b) &lt; f(x + b + 1)) x += b;
+}
+int k = x + 1; // pozicija maksimuma
+</code></pre>
+        <p class="small muted"><span class="m">z</span> je najveći korak, npr. najmanja potencija broja 2 koja je barem veličina domene.</p>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 3. TEORIJA INFORMACIJA: PRETRAŽIVANJE KAO POSTAVLJANJE PITANJA         -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 3</span>
+    <h1>Pretraživanje kao postavljanje pitanja</h1>
+    <p>Koliko je pitanje vrijedno? Zašto je binarno pretraživanje optimalno? Što je zapravo <em>kod</em> elementa?</p>
+  </section>
+
+  <section>
+    <h2>Igra pitanja</h2>
+    <p class="small">Zamislimo skup <span class="m">S</span> od <span class="m">n</span> elemenata. Jedan je <strong>traženi</strong>, ali ne znamo koji. Smijemo postavljati samo pitanja oblika
+      <strong>„Je li traženi element u podskupu <span class="m">A ⊆ S</span>?”</strong> i dobivamo odgovor <strong>DA</strong> ili <strong>NE</strong>.</p>
+    <ul class="small">
+      <li><strong>Linearno pretraživanje</strong>: <span class="m">A</span> je jednočlan — „je li to element <span class="m">i</span>?”</li>
+      <li><strong>Binarno pretraživanje</strong>: <span class="m">A</span> je polovica preostalih kandidata.</li>
+      <li><strong>Sam biraj</strong>: možete li smisliti bolju strategiju od polovljenja?</li>
+    </ul>
+    <div class="viz" data-viz="questions" data-n="16"></div>
+    <aside class="notes">Prvo linearno: pokazati da NE na 16 kandidata nosi samo 0,09 bita. Zatim polovljenje: svaki odgovor točno 1 bit, 4 pitanja. Na kraju dati studentima da probaju „sam biraj” i vide da nikakav podskup ne može isključiti više od pola kandidata u gorem ishodu.</aside>
+  </section>
+
+  <section>
+    <h2>Jedan odgovor = najviše jedan bit</h2>
+    <div class="cols w-3-2">
+      <div>
+        <ul class="small">
+          <li>Nakon <span class="m">k</span> pitanja postoji najviše <span class="m">2<sup>k</sup></span> različitih nizova odgovora.</li>
+          <li>Dva elementa s <em>istim</em> nizom odgovora ne možemo razlikovati — strategija bi za oba zaključila isto.</li>
+          <li>Da bismo razlikovali <span class="m">n</span> elemenata treba <span class="m">2<sup>k</sup> ≥ n</span>, tj. <strong><span class="m">k ≥ ⌈log₂ n⌉</span> pitanja u najgorem slučaju — za bilo koju strategiju</strong>.</li>
+          <li>Binarno pretraživanje troši točno <span class="m">⌈log₂ n⌉</span> pitanja: <strong>optimalno</strong> je.</li>
+        </ul>
+        <p class="small">Zašto baš polovica? Ako pitanje dijeli <span class="m">m</span> kandidata na <span class="m">|A|</span> i <span class="m">m − |A|</span>, u gorem ishodu ostaje ih <span class="m">max(|A|, m − |A|) ≥ m/2</span>. Nijedno pitanje ne može u najgorem slučaju isključiti više od polovice.</p>
+      </div>
+      <div>
+        <div class="callout key"><span class="label">Mjera informacije</span>
+          Ako je prije odgovora bilo <span class="m">m</span> kandidata, a nakon njega <span class="m">m′</span>, odgovor je donio <span class="eq">log₂(m / m′) bita.</span>
+          Polovljenje: točno 1 bit. Odgovor NE na „je li to element 7?” pri <span class="m">m = 16</span>: <span class="m">log₂(16/15) ≈ 0,09</span> bita.</div>
+        <p class="small muted">Jedinica <em>bit</em> (binary digit) upravo je „jedan odgovor DA/NE”. Element među <span class="m">n</span> kandidata nosi <span class="m">log₂ n</span> bita informacije.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Zašto sortiranost pomaže?</h2>
+    <p class="small">Usporedba je pitanje. Ali <em>koje</em> pitanje jednom usporedbom možemo postaviti ovisi o tome što već znamo o podacima.</p>
+    <div class="cols">
+      <div class="callout note"><span class="label">Sortiran niz</span>
+        Usporedba <code>x &lt; a[mid]</code> odgovara na pitanje „je li pozicija traženog u <span class="mr">{l, …, mid−1}</span>?” — podskup od <strong>polovice</strong> kandidata, 1 bit. Ukupno <span class="m">⌈log₂ n⌉</span> usporedbi.</div>
+      <div class="callout warn"><span class="label">Nesortiran niz</span>
+        Usporedba <code>x == a[i]</code> odgovara samo na „je li to <span class="m">a[i]</span>?” — podskup od <strong>jednog</strong> elementa, gotovo 0 bita. Ako <span class="m">x</span> nema u nizu, to ne možemo zaključiti dok ne provjerimo svih <span class="m">n</span>.</div>
+    </div>
+    <p class="small">Sortiranje nam unaprijed „kupuje” mogućnost postavljanja <strong>dobrih pitanja</strong>. Zato se isplati jednom sortirati (<span class="m">n log n</span>) pa mnogo puta pretraživati (<span class="m">log n</span> po upitu). Istu ideju koriste i binarna stabla pretraživanja, i <code>lower_bound</code>, i pretraživanje po rješenju: u svim slučajevima <strong>monotonost</strong> nam dopušta pitanje o polovici.</p>
+  </section>
+
+  <section>
+    <h2>Binarno pretraživanje kao kodiranje</h2>
+    <p class="small">Svaka strategija pitanja je <strong>binarno stablo</strong>: unutarnji čvor = pitanje, djeca = odgovori, list = zaključak. Put od korijena do lista, zapisan bitovima, je <strong>kod</strong> elementa; pretraživanje = čitanje koda, bit po bit.</p>
+    <div class="viz" data-viz="tree" data-kind="bin8" data-target="5"></div>
+  </section>
+
+  <section>
+    <h2>Binarna stabla i donja granica</h2>
+    <div class="cols">
+      <div>
+        <ul class="small">
+          <li>Binarno stablo dubine <span class="m">d</span> ima najviše <span class="m">2<sup>d</sup></span> listova.</li>
+          <li>Trebamo barem <span class="m">n</span> listova (svaki element svoj zaključak) <span class="m">⇒ d ≥ ⌈log₂ n⌉</span>.</li>
+          <li><strong>Najgori slučaj</strong> = dubina stabla. <strong>Prosječni slučaj</strong> = prosječna duljina koda.</li>
+          <li>Uravnoteženo stablo (binarno pretraživanje) minimizira oboje; degenerirano stablo (linearno pretraživanje) ima dubinu <span class="m">n − 1</span>.</li>
+          <li>Kodovi su <strong>prefiksni</strong>: nijedan kod nije početak drugoga, jer stajemo čim dođemo do lista.</li>
+        </ul>
+      </div>
+      <div>
+        <div class="callout thm"><span class="label">Veza s kodom iz 2. poglavlja</span>
+          Varijanta s koracima <span class="m">b = n/2, n/4, …, 1</span> odlučuje u svakom koraku <strong>jedan bit</strong> tražene pozicije, od najznačajnijeg prema najmanje značajnom: <code>k += b</code> znači „taj bit je 1”. Binarno pretraživanje doslovno <em>piše binarni zapis</em> odgovora.</div>
+        <div class="callout tip"><span class="label">Dalje</span>
+          Ista slika objašnjava zašto su operacije nad <em>uravnoteženim</em> binarnim stablom pretraživanja <span class="m">O(log n)</span>, a nad degeneriranim <span class="m">O(n)</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Nejednake vjerojatnosti: entropija</h2>
+    <p class="small">Što ako neke elemente tražimo češće? Neka element <span class="m">i</span> tražimo s vjerojatnošću <span class="m">p<sub>i</sub></span>. Tada je <strong>očekivani</strong> broj pitanja bilo koje strategije barem <span class="mr">H = ∑ p<sub>i</sub> · log₂(1 / p<sub>i</sub>)</span> — <strong>Shannonova entropija</strong> (1948). Za jednake vjerojatnosti <span class="m">H = log₂ n</span>.</p>
+    <div class="viz narrow" data-viz="entropy"></div>
+    <p class="small muted">Rijedak element smije imati dug kod, čest element kratak. <strong>Huffmanov algoritam</strong> gradi stablo s najmanjom očekivanom duljinom (uvijek <span class="m">&lt; H + 1</span>). Ako pitanja moraju biti oblika „<span class="m">x &gt; a[m]</span>?”, optimalno stablo je <em>optimalno binarno stablo pretraživanja</em> (dinamičko programiranje).</p>
+  </section>
+
+  <section>
+    <h2>Što smo naučili</h2>
+    <ul>
+      <li>Usporedba je pitanje s odgovorom DA/NE; odgovor donosi <strong>najviše jedan bit</strong>.</li>
+      <li>Razlikovati <span class="m">n</span> mogućnosti znači prikupiti <span class="m">log₂ n</span> bita — zato je <span class="m">⌈log₂ n⌉</span> donja granica, a binarno pretraživanje optimalno.</li>
+      <li>Strategija = binarno stablo = prefiksni kod. Dubina stabla = najgori slučaj.</li>
+      <li>Sortiranost (monotonost) je ono što nam omogućuje pitanja „o polovici”.</li>
+    </ul>
+    <div class="callout key"><span class="label">Najava</span>
+      Istu ideju primijenit ćemo na <strong>sortiranje</strong>: tamo je skup mogućih odgovora skup svih <span class="m">n!</span> poredaka, a usporedba je pitanje o tom skupu. Zaključak: nužno je <span class="m">log₂ n!</span> usporedbi.</div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 4. TERNARNO PRETRAŽIVANJE                                              -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 4</span>
+    <h1>Ternarno pretraživanje</h1>
+    <p>Što se dogodi ako niz dijelimo na <em>tri</em> dijela? I kada je to zaista korisno.</p>
+  </section>
+
+  <section>
+    <h2>O algoritmu</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Binarno pretraživanje dijeli niz na <strong>dva</strong> dijela. Ternarno ga dijeli na <strong>tri</strong>: umjesto jedne sredine biramo dvije,</p>
+<pre><code class="language-text" data-trim>
+mid1 = l + (r - l) / 3
+mid2 = r - (r - l) / 3
+</code></pre>
+        <p class="small">Uspoređujemo <span class="m">x</span> s <span class="m">a[mid1]</span> i <span class="m">a[mid2]</span>. Ako nismo pogodili, tri su slučaja:</p>
+        <ol class="small">
+          <li><span class="m">x &lt; a[mid1]</span>: nastavljamo u <span class="mr">[l, mid1⟩</span></li>
+          <li><span class="m">x &gt; a[mid2]</span>: nastavljamo u <span class="mr">⟨mid2, r]</span></li>
+          <li>inače: nastavljamo u <span class="mr">⟨mid1, mid2⟩</span></li>
+        </ol>
+        <p class="small">Problem se svodi na trećinu: <span class="m">log₃ n</span> koraka.</p>
+      </div>
+      <div>
+<pre><code class="language-cpp" data-trim>
+int ternary_search(int l, int r, int x) {
+    if (r &gt;= l) {
+        int mid1 = l + (r - l) / 3;
+        int mid2 = r - (r - l) / 3;
+
+        if (array[mid1] == x) return mid1;
+        if (array[mid2] == x) return mid2;
+        if (x &lt; array[mid1])
+            return ternary_search(l, mid1 - 1, x);
+        else if (x &gt; array[mid2])
+            return ternary_search(mid2 + 1, r, x);
+        else
+            return ternary_search(mid1 + 1, mid2 - 1, x);
+    }
+    return -1; // nema ga
+}
+</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Je li ternarno brže od binarnog?</h2>
+    <div class="cols w-3-2">
+      <div>
+        <p class="small">Manje <em>koraka</em>, da: <span class="m">log₃ n &lt; log₂ n</span>. Ali brojimo <strong>usporedbe</strong>, a svaki korak ternarnog pretraživanja treba <strong>dvije</strong>:</p>
+        <p class="eq">2 · log₃ n = (2 / log₂ 3) · log₂ n ≈ 1,26 · log₂ n</p>
+        <p class="small">Razlog je informacijski: dva pitanja DA/NE mogu razlikovati <strong>četiri</strong> ishoda, a ternarni korak iskoristi samo <strong>tri</strong>. Dio informacije ostaje neiskorišten.</p>
+        <p class="small">Općenito, dijeljenje na <span class="m">b</span> dijelova traži <span class="m">(b − 1)</span> usporedbi po koraku: <span class="m">(b−1) log<sub>b</sub> n</span> usporedbi, što je najmanje upravo za <span class="m">b = 2</span>.</p>
+      </div>
+      <div>
+        <table class="center">
+          <tr><th></th><th class="num">n = 10³</th><th class="num">n = 10⁶</th></tr>
+          <tr><td>binarno, usporedbi</td><td class="num">10</td><td class="num">20</td></tr>
+          <tr><td>ternarno, koraka</td><td class="num">7</td><td class="num">13</td></tr>
+          <tr><td>ternarno, usporedbi</td><td class="num">14</td><td class="num">26</td></tr>
+        </table>
+        <div class="callout key"><span class="label">Pouka</span> Više dijelova ≠ brže. Broji se broj <em>pitanja</em>, a jedno pitanje donosi najviše jedan bit.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Implementacija na realnom intervalu</h2>
+    <p class="small">Na intervalu realnih brojeva ne možemo provjeravati jednakost — računala zaokružuju. Provjeravamo razlikuju li se brojevi <strong>do na neki mali <span class="m">ε</span></strong>, a petlju zaustavljamo kad interval postane kraći od <span class="m">ε</span>.</p>
+<pre><code class="language-cpp" data-trim>
+double epsilon = 1e-7;
+
+double ternary_search(double l, double r, double fx) {
+    if (r - l &gt; epsilon) {
+        double mid1 = l + (r - l) / 3;
+        double mid2 = r - (r - l) / 3;
+
+        if (abs(f(mid1) - fx) &lt; epsilon) return mid1;
+        // ... analogno kao za cijele brojeve
+    }
+    // ...
+}
+</code></pre>
+    <p class="small muted">Broj koraka je <span class="m">log<sub>3/2</sub>((r − l) / ε)</span> ili <span class="m">log₃</span>, ovisno o varijanti — u praksi fiksan broj iteracija (npr. 100 ili 200) umjesto usporedbe s <span class="m">ε</span>.</p>
+  </section>
+
+  <section>
+    <h2>Lokalni ekstremi: unimodalne funkcije</h2>
+    <div class="cols w-2-3">
+      <div>
+        <p class="small">Za sortirane nizove binarno pretraživanje je dovoljno. Ternarno je našlo pravu primjenu u traženju <strong>ekstrema funkcija</strong>: funkcija koja prvo <em>raste</em> pa <em>pada</em> (unimodalna). Dijelimo interval s <span class="m">m₁, m₂</span> i usporedimo <span class="m">f(m₁)</span> i <span class="m">f(m₂)</span>:</p>
+        <ol class="small">
+          <li><span class="m">f(m₁) &lt; f(m₂)</span>: maksimum <strong>nije</strong> lijevo od <span class="m">m₁</span> (<span class="m">m₁</span> je u rastućem dijelu) → <span class="mr">[m₁, r]</span></li>
+          <li><span class="m">f(m₁) &gt; f(m₂)</span>: maksimum <strong>nije</strong> desno od <span class="m">m₂</span> → <span class="mr">[l, m₂]</span></li>
+          <li><span class="m">f(m₁) = f(m₂)</span>: maksimum je između njih — bilo koji od prva dva odabira je ispravan</li>
+        </ol>
+        <p class="small">Svaki korak odbacuje <strong>trećinu</strong> intervala s jednom usporedbom.</p>
+      </div>
+      <div class="viz" data-viz="ternary" data-preset="asim"></div>
+    </div>
+    <aside class="notes">Pokrenuti najprije asimetričnu, pa „dva vrha”: pokazati kako algoritam odbaci trećinu u kojoj je pravi maksimum i konvergira prema pogrešnom vrhu.</aside>
+  </section>
+
+  <section>
+    <h2>Što ako funkcija ima više ekstrema?</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Algoritam radi samo za funkcije s <strong>jednim</strong> ekstremom (<a href="https://en.wikipedia.org/wiki/Unimodality#Unimodal_function">unimodalne</a>). Ako ih ima više, rješenje zvuči naivno, ali radi: pogledajte graf, odaberite interval oko ekstrema koji vas zanima tako da <em>ne obuhvaća nijedan drugi</em>, i ternarno pretražite samo taj interval.</p>
+        <div class="callout note"><span class="label">Primijetite</span>
+          Na cjelobrojnoj domeni umjesto ternarnog možemo binarno pretraživati granicu uvjeta <span class="m">f(x) &lt; f(x+1)</span> (2. poglavlje): jedna usporedba po koraku <em>prepolovi</em> interval, dok ga ternarno smanji samo na dvije trećine (<span class="m">log<sub>3/2</sub> n ≈ 1,71 · log₂ n</span> koraka).</div>
+      </div>
+      <div>
+        <p class="small"><strong>Zlatni rez</strong> (golden-section search) je poboljšanje za realne funkcije: bira <span class="m">m₁, m₂</span> tako da se jedna od njih u sljedećem koraku <em>ponovno iskoristi</em>, pa treba samo jedno novo izračunavanje <span class="m">f</span> po koraku uz smanjenje intervala na <span class="m">≈ 0,618</span>.</p>
+        <p class="small">Više: <a href="https://cp-algorithms.com/num_methods/ternary_search.html">cp-algorithms: Ternary search</a>.</p>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 5. BITONIČNO SORTIRANJE                                                -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 5</span>
+    <h1>Bitonično sortiranje</h1>
+    <p>Sortiranje u kojem je unaprijed poznato <em>koje</em> ćemo parove usporediti — i zato se može izvoditi paralelno.</p>
+  </section>
+
+  <section>
+    <h2>Mreže za sortiranje</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Merge sort i quick sort su <strong>adaptivni</strong>: koju usporedbu radimo sljedeću ovisi o rezultatima prethodnih. To je dobro za broj usporedbi, ali loše za sklopovlje i paralelizam.</p>
+        <p class="small"><strong>Mreža komparatora</strong> (sorting network) je niz unaprijed zadanih usporedbi: komparator uzme dvije vrijednosti i vrati manju na jednu, veću na drugu žicu. Isti slijed komparatora radi za <em>svaki</em> ulaz.</p>
+        <ul class="small">
+          <li>Komparatori na istoj <strong>razini</strong> ne dijele žice → mogu raditi <strong>istodobno</strong>.</li>
+          <li>Vrijeme izvođenja na <span class="m">n/2</span> procesora = broj razina (<em>dubina</em>).</li>
+          <li>Primjena: GPU, SIMD instrukcije, sklopovlje, kriptografija (vrijeme neovisno o podacima).</li>
+        </ul>
+      </div>
+      <div>
+        <div class="callout thm"><span class="label">Pitanje</span>
+          Kako sortirati bez da ikad „pogledamo” podatke prije nego odlučimo što uspoređujemo?</div>
+        <p class="small">Odgovor Kena Batchera (1968): <strong>bitonično sortiranje</strong> — mreža dubine <span class="m">O(log² n)</span> s <span class="m">O(n log² n)</span> komparatora. Temelji se na posebnoj vrsti nizova koje je lako spojiti.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bitonični niz</h2>
+    <p class="small">Niz je <strong>bitoničan</strong> ako najprije (ne nužno strogo) <strong>raste</strong>, a zatim <strong>pada</strong> — pri čemu jedan od dva dijela može biti prazan — ili je <em>ciklički pomak</em> takvog niza.</p>
+    <ul class="small">
+      <li><span class="mr">1, 3, 5, 8, 6, 4, 2</span> — raste pa pada</li>
+      <li><span class="mr">6, 8, 7, 3, 1, 2, 4</span> — ciklički pomak prethodnog oblika (pada pa raste)</li>
+      <li><span class="mr">1, 2, 3, 4</span> i <span class="mr">4, 3, 2, 1</span> — sortirani nizovi su bitonični</li>
+      <li><span class="mr">1, 2, 3, 5, 4, 6</span> — <strong>nije</strong> bitoničan (dva uspona)</li>
+    </ul>
+    <div class="callout key"><span class="label">Ključno opažanje</span>
+      <strong>Rastući sortirani niz + padajući sortirani niz = bitonični niz.</strong> Ako znamo sortirati bitonični niz, znamo <em>spojiti</em> dva sortirana niza — a to je sve što merge sortu treba.</div>
+  </section>
+
+  <section>
+    <h2>Polučistač (half-cleaner): ključna lema</h2>
+    <div class="cols">
+      <div>
+        <div class="callout thm"><span class="label">Lema</span>
+          Neka je <span class="m">a[0..n−1]</span> bitoničan, <span class="m">n</span> paran. Za svaki <span class="m">i &lt; n/2</span> usporedimo <span class="m">a[i]</span> i <span class="m">a[i + n/2]</span> i manji stavimo na mjesto <span class="m">i</span>, veći na <span class="m">i + n/2</span>. Tada:
+          <ol>
+            <li>obje polovice su opet <strong>bitonične</strong>,</li>
+            <li>svaki element prve polovice <span class="m">≤</span> svakog elementa druge.</li>
+          </ol></div>
+      </div>
+      <div>
+        <p class="small"><strong>Ideja dokaza.</strong> Nacrtajmo prvu i drugu polovicu niza jednu preko druge. Budući da niz najprije raste pa pada, te se dvije krivulje <strong>sijeku najviše jednom</strong>. Lijevo od sjecišta minimume daje jedna krivulja, desno druga — niz minimuma je „zalijepljen” od dva komada bitoničnih krivulja i sam je bitoničan; isto za maksimume. A svaki minimum je, naravno, manji od svakog maksimuma iznad njega.</p>
+        <p class="small"><strong>Bitonično spajanje</strong>: polučistač na <span class="m">n</span>, pa rekurzivno na obje polovice. Nakon <span class="m">log₂ n</span> razina niz je sortiran. Ukupno <span class="m">(n/2) · log₂ n</span> komparatora, a sve usporedbe jedne razine su neovisne.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Bitonično spajanje — vizualizacija</h2>
+    <p class="small">Ulaz je bitoničan niz (raste pa pada). Razine su polučistači na udaljenosti <span class="m">j = n/2, n/4, …, 1</span>. Nakon prve razine sve lijevo je manje od svega desno.</p>
+    <div class="viz" data-viz="bitonic" data-n="16" data-mode="merge" data-seed="41"></div>
+  </section>
+
+  <section>
+    <h2>Cijela mreža: sortiraj polovice u suprotnim smjerovima, pa spoji</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Rekurzija: sortiraj prvu polovicu <strong>rastuće</strong>, drugu <strong>padajuće</strong> (ista mreža sa zrcaljenim komparatorima) → dobiješ bitoničan niz → <strong>bitonično spoji</strong>. Iterativno: blokovi veličine <span class="m">k = 2, 4, …, n</span>; unutar bloka parovi na udaljenosti <span class="m">j = k/2, …, 1</span>; smjer bloka određuje bit <span class="m">k</span> indeksa.</p>
+<pre><code class="language-cpp" data-trim>
+// n je potencija broja 2
+for (int k = 2; k &lt;= n; k *= 2)           // veličina blokova koje spajamo
+    for (int j = k / 2; j &gt;= 1; j /= 2)   // udaljenost uspoređivanih parova
+        for (int i = 0; i &lt; n; i++) {
+            int l = i ^ j;                 // partner elementa i
+            if (l &gt; i) {
+                bool rastuci = (i &amp; k) == 0;
+                if (rastuci ? a[i] &gt; a[l] : a[i] &lt; a[l])
+                    swap(a[i], a[l]);
+            }
+        }
+</code></pre>
+      </div>
+      <div>
+        <p class="small"><strong>Brojanje.</strong> Dubina (broj razina): <span class="eq">D(n) = D(n/2) + log₂ n = log₂ n · (log₂ n + 1) / 2</span>
+        Komparatori: <span class="eq">C(n) = 2·C(n/2) + (n/2)·log₂ n = (n/4) · log₂ n · (log₂ n + 1)</span></p>
+        <p class="small">Za <span class="m">n = 8</span>: 6 razina, 24 komparatora. Za <span class="m">n = 16</span>: 10 razina, 80 komparatora.</p>
+        <p class="small muted">Unutarnja petlja po <span class="m">i</span> je ono što se izvodi paralelno — sve usporedbe iste razine su neovisne.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Cijela mreža — vizualizacija</h2>
+    <p class="small">Sive trake su faze <span class="m">k</span> (veličina blokova koji se spajaju). Plavi blokovi se sortiraju rastuće, narančasti padajuće; dva susjedna bloka zajedno čine bitoničan niz za sljedeću fazu.</p>
+    <div class="viz" data-viz="bitonic" data-n="8" data-mode="sort" data-seed="17"></div>
+  </section>
+
+  <section>
+    <h2>Složenost i usporedba</h2>
+    <div class="cols w-3-2">
+      <div>
+        <table>
+          <tr><th class="num">n</th><th class="num">merge sort<br><span class="tiny">≈ n log₂ n</span></th><th class="num">bitonično<br><span class="tiny">komparatora</span></th><th class="num">bitonično<br><span class="tiny">razina</span></th></tr>
+          <tr><td class="num">8</td><td class="num">24</td><td class="num">24</td><td class="num">6</td></tr>
+          <tr><td class="num">16</td><td class="num">64</td><td class="num">80</td><td class="num">10</td></tr>
+          <tr><td class="num">1 024</td><td class="num">10 240</td><td class="num">28 160</td><td class="num">55</td></tr>
+          <tr><td class="num">2<sup>20</sup> ≈ 10⁶</td><td class="num">≈ 21 · 10⁶</td><td class="num">≈ 110 · 10⁶</td><td class="num">210</td></tr>
+        </table>
+      </div>
+      <div>
+        <ul class="small">
+          <li><strong>Sekvencijalno</strong>: faktor <span class="m">log n</span> lošije od merge sorta.</li>
+          <li><strong>Paralelno</strong> (<span class="m">n/2</span> procesora): <span class="m">O(log² n)</span> koraka — za milijun elemenata 210 razina.</li>
+          <li>Broj usporedbi <strong>ne ovisi o podacima</strong>; nema grananja.</li>
+          <li>Zahtijeva <span class="m">n</span> potenciju broja 2 (dopunimo niz do nje).</li>
+          <li>Batcherov <em>odd–even merge</em>: nešto manje komparatora. AKS mreža (1983): dubina <span class="m">O(log n)</span>, nepraktične konstante.</li>
+        </ul>
+        <div class="callout key"><span class="label">Veza s pitanjima</span> Mreža unaprijed fiksira <em>sva</em> pitanja, pa mora biti spremna na svaki od <span class="m">n!</span> ulaza — zato ih treba više od <span class="m">log₂ n!</span>.</div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 6. KOJE USPOREDBE ODREĐUJU POREDAK?                                    -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 6</span>
+    <h1>Koje usporedbe određuju poredak?</h1>
+    <p>Imamo rezultate nekih usporedbi. Kada iz njih slijedi <em>jedan jedini</em> poredak? Koliko ih je najmanje potrebno — i zašto ih ipak trebamo <span class="m">n log n</span>?</p>
+  </section>
+
+  <section>
+    <h2>Pokus: usporedi dok poredak ne bude jednoznačan</h2>
+    <p class="small">Vrijednosti elemenata su skrivene. Klikni dva elementa da ih usporediš: strelica pokazuje od manjeg prema većem. Rezultati usporedbi čine <strong>usmjereni graf</strong>, a tranzitivnost daje dodatne zaključke (ljubičasto). Desno: koliko je poredaka još u skladu sa svime što znamo.</p>
+    <div class="viz" data-viz="order" data-n="5"></div>
+    <aside class="notes">Pustiti studente da predlažu usporedbe. Pokazati: (1) usporedba koja slijedi tranzitivno nosi 0 bita; (2) „Savjet” uvijek bira usporedbu koja dijeli poretke što ravnomjernije; (3) na kraju su tirkizne točno n−1 usporedbe susjeda. Za n = 5 donja granica je 7, i stvarno se može postići.</aside>
+  </section>
+
+  <section>
+    <h2>Teorem: nužne su točno usporedbe susjeda</h2>
+    <div class="callout thm"><span class="label">Teorem</span>
+      Neka su <span class="m">x₁ &lt; x₂ &lt; … &lt; x<sub>n</sub></span> elementi u (nama nepoznatom) pravom poretku. Skup rezultata usporedbi <strong>jednoznačno određuje poredak</strong> ako i samo ako su za svaki <span class="m">i</span> elementi <span class="m">x<sub>i</sub></span> i <span class="m">x<sub>i+1</sub></span> <strong>izravno uspoređeni</strong>.</div>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>(⇐)</strong> Iz <span class="m">x₁ &lt; x₂</span>, <span class="m">x₂ &lt; x₃</span>, …, <span class="m">x<sub>n−1</sub> &lt; x<sub>n</sub></span> tranzitivnošću slijedi odnos svakog para, dakle cijeli poredak. Nijedan drugi poredak nije u skladu s tim lancem.</p>
+        <p class="small"><strong>(⇒)</strong> Pretpostavimo da <span class="m">x<sub>i</sub></span> i <span class="m">x<sub>i+1</sub></span> nisu uspoređeni. Zamijenimo im mjesta. Svaka obavljena usporedba <span class="m">x<sub>i</sub></span> s nekim <span class="m">c</span> ostaje točna: nema elementa <em>između</em> njih, pa je <span class="m">c</span> ili manji od oba ili veći od oba. Postoje dakle <strong>dva</strong> poretka u skladu sa svim rezultatima — poredak nije određen.</p>
+      </div>
+      <div>
+        <div class="callout key"><span class="label">Posljedica</span>
+          <strong>Najmanji</strong> skup usporedbi koji određuje poredak je <strong>jedinstven</strong>: <span class="m">n − 1</span> usporedbi susjeda — Hamiltonov put u grafu usporedbi. Svaka druga usporedba je <em>suvišna</em>: slijedi tranzitivno iz lanca.</div>
+        <p class="small muted">U grafu: poredak je određen ⇔ tranzitivno zatvorenje je potpun poredak ⇔ graf ima jedinstveni topološki poredak ⇔ graf sadrži Hamiltonov put.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kako konstruirati minimalni skup?</h2>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>Konstrukcija:</strong> sortiraj, pa uzmi <span class="m">n − 1</span> susjednih parova. To je <em>certifikat</em> poretka: tko ga dobije, provjeri poredak s <span class="m">n − 1</span> usporedbi.</p>
+        <p class="small"><strong>Kvaka:</strong> da bismo znali <em>koji</em> su parovi susjedni, moramo već znati poredak — a to je upravo ono što tražimo! Algoritam ne može unaprijed pogoditi susjede; usporedbe bira <strong>adaptivno</strong>, ovisno o prethodnim odgovorima.</p>
+        <p class="small">Na kraju svakog sortiranja sve su usporedbe susjeda napravljene (teorem). Ostale usporedbe nisu „bačene”: one su bile potrebne da bismo <em>otkrili</em> tko je čiji susjed.</p>
+      </div>
+      <div>
+        <div class="callout note"><span class="label">Provjera vs. pronalazak</span>
+          Provjeriti da je niz sortiran: <span class="m">n − 1</span> usporedbi.<br>
+          Sortirati ga: barem <span class="m">⌈log₂ n!⌉ ≈ n log₂ n − 1,44 n</span> usporedbi.<br>
+          Razlika između ta dva broja je cijena <em>traženja</em> certifikata.</div>
+        <p class="small">Zašto baš <span class="m">log₂ n!</span>? Odgovor daje poglavlje 3 — sljedeći slajd.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Donja granica za sortiranje: <span class="m">⌈log₂ n!⌉</span></h2>
+    <div class="cols w-3-2">
+      <div>
+        <p class="small">Prije prve usporedbe moguć je svaki od <span class="m">n!</span> poredaka. Usporedba <span class="m">a &lt; b?</span> je pitanje DA/NE <strong>o skupu poredaka</strong>: poretke u kojima je <span class="m">a</span> ispred <span class="m">b</span> i one u kojima nije. U gorem ishodu ostaje barem polovica.</p>
+        <p class="small">Poredak je određen tek kad ostane <strong>jedan</strong> kandidat. Dakle, po istom argumentu kao za pretraživanje:</p>
+        <p class="eq">broj usporedbi ≥ ⌈log₂ n!⌉ ≈ n log₂ n − 1,44 n</p>
+        <p class="small">Stablo odluke algoritma za sortiranje ima <span class="m">n!</span> listova, pa mu je dubina barem <span class="m">log₂ n!</span>. Nijedan algoritam temeljen na usporedbama ne može bolje — ni <code>std::sort</code>, ni bilo koji budući.</p>
+      </div>
+      <div>
+        <table>
+          <tr><th class="num">n</th><th class="num">⌈log₂ n!⌉</th><th class="num">merge sort<br><span class="tiny">najgori slučaj</span></th><th class="num">bubble sort</th></tr>
+          <tr><td class="num">5</td><td class="num">7</td><td class="num">8</td><td class="num">10</td></tr>
+          <tr><td class="num">10</td><td class="num">22</td><td class="num">25</td><td class="num">45</td></tr>
+          <tr><td class="num">100</td><td class="num">525</td><td class="num">573</td><td class="num">4 950</td></tr>
+          <tr><td class="num">1 000</td><td class="num">8 530</td><td class="num">8 977</td><td class="num">≈ 5 · 10⁵</td></tr>
+          <tr><td class="num">10⁶</td><td class="num">≈ 18,5 · 10⁶</td><td class="num">≈ 19,0 · 10⁶</td><td class="num">≈ 5 · 10¹¹</td></tr>
+        </table>
+        <p class="tiny muted">merge sort: <span class="m">n⌈log₂ n⌉ − 2<sup>⌈log₂ n⌉</sup> + 1</span>; bubble sort: <span class="m">n(n−1)/2</span>. Umetanje s binarnim pretraživanjem troši <span class="m">∑⌈log₂ k⌉ ≈ log₂ n!</span> usporedbi (ali <span class="m">O(n²)</span> pomicanja). Ford–Johnson (1959) je još bliže granici.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Stablo odluke za <span class="m">n = 3</span></h2>
+    <p class="small">Svaki algoritam za sortiranje je binarno stablo: čvor = usporedba, list = poredak. Za tri elementa treba <span class="m">3! = 6</span> listova, pa je dubina barem <span class="m">⌈log₂ 6⌉ = 3</span>. Stablo ispod to i postiže: 3 usporedbe u najgorem slučaju (a nekad samo 2).</p>
+    <div class="viz narrow" data-viz="sorttree"></div>
+    <p class="small muted">Na svakom putu do lista prolazimo točno kroz usporedbe susjeda u tom poretku — plus eventualno jednu suvišnu. Npr. put do <span class="mr">c &lt; a &lt; b</span>: <span class="m">a &lt; b</span> (susjedi), <span class="m">b &lt; c</span>? ne — suvišna, <span class="m">a &lt; c</span>? ne — susjedi.</p>
+  </section>
+
+  <section>
+    <h2>Što smo naučili</h2>
+    <ul>
+      <li>Rezultati usporedbi određuju poredak ⇔ svi <strong>susjedni parovi</strong> su uspoređeni izravno.</li>
+      <li>Minimalni takav skup je jedinstven i ima <span class="m">n − 1</span> usporedbi; sve ostale su tranzitivno suvišne.</li>
+      <li>Taj skup ne možemo unaprijed pogoditi: svaki algoritam ga mora <em>pronaći</em>, a to košta <span class="m">⌈log₂ n!⌉ ≈ n log₂ n</span> usporedbi u najgorem slučaju.</li>
+      <li>Isti informacijski argument kao kod binarnog pretraživanja: <span class="m">n!</span> kandidata, jedan bit po pitanju.</li>
+    </ul>
+    <div class="callout key"><span class="label">Zatvoren krug</span>
+      Obećali smo u 1. poglavlju: „ne može brže od <span class="m">O(n log n)</span>”. Sad znamo i zašto, i točno koliko.</div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 7. ZAKLJUČAK                                                           -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Zaključak</span>
+    <h1>Što ponijeti kući</h1>
+    <ol>
+      <li>Sortiranje: <span class="m">O(n²)</span> je lako, <span class="m">O(n log n)</span> je standard, brže samo bez usporedbi.</li>
+      <li>Binarno pretraživanje radi gdje god postoji <strong>monotonost</strong>: niz, uvjet, funkcija.</li>
+      <li>Usporedba = pitanje = najviše 1 bit. Odatle <span class="m">log₂ n</span> za pretraživanje i <span class="m">log₂ n!</span> za sortiranje.</li>
+      <li>Strategija pretraživanja = binarno stablo = kod; uravnoteženo je optimalno.</li>
+      <li>Ternarno pretraživanje: za ekstreme unimodalnih funkcija, ne za sortirane nizove.</li>
+      <li>Bitonične mreže: sve usporedbe unaprijed, <span class="m">O(log² n)</span> paralelnih koraka.</li>
+      <li>Poredak određuju usporedbe susjeda; teško ih je <em>naći</em>, lako <em>provjeriti</em>.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Zadaci za vježbu</h2>
+    <div class="cols">
+      <div>
+        <h3><a href="https://codeforces.com/problemset/problem/1424/G">Years</a> (Codeforces 1424G)</h3>
+        <ul class="small">
+          <li class="fragment"><em>Hint 1:</em> ako imamo samo popis godina rođenja, koliko je ljudi rođeno <strong>prije</strong> neke godine? Da bismo efikasno odgovarali, prvo <strong>sortiramo</strong> i koristimo binarnu pretragu.</li>
+          <li class="fragment"><em>Hint 2:</em> jedino godine kada se netko rodio ili umro mogu biti rješenje.</li>
+          <li class="fragment"><em>Hint 3:</em> godine rođenja i smrti ne moramo vezati uz osobu — gledamo ih neovisno.</li>
+          <li class="fragment"><em>Rješenje:</em> za svaku kandidatsku godinu <span class="m">g</span>: (rođeni prije <span class="m">g</span>) − (umrli prije <span class="m">g</span>), oboje binarnom pretragom. <span class="m">O(n log n)</span>.</li>
+        </ul>
+      </div>
+      <div>
+        <h3><a href="https://codeforces.com/problemset/problem/1250/J">The Parade</a> (Codeforces 1250J)</h3>
+        <ul class="small">
+          <li class="fragment"><em>Hint 1:</em> odaberimo veličinu reda <span class="m">r</span>. Možemo li napraviti <span class="m">k</span> redova veličine <span class="m">r</span>? U kojoj složenosti to provjerimo?</li>
+          <li class="fragment"><em>Hint 2:</em> provjera je linearna: pohlepno punimo redove, preostale vojnike prebacujemo u sljedeći red.</li>
+          <li class="fragment"><em>Rješenje:</em> postoji granična veličina reda — binarno pretražimo <span class="m">r</span> (pretraživanje rješenja!). Odgovor je <span class="m">r · k</span>.</li>
+        </ul>
+        <p class="small">Još: <a href="https://codeforces.com/problemset/problem/1339/B">Sorted Adjacent Differences</a>, <a href="https://codeforces.com/problemset/problem/474/B">Worms</a>.</p>
+        <p class="small"><em>Za razmišljanje:</em> koliko najmanje usporedbi treba da bismo u najgorem slučaju sortirali 5 elemenata? (Odgovor: 7 — i to se postiže.)</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Izvori i literatura</h2>
+    <ul class="small">
+      <li>Maja Milas, <a href="https://materijali.xfer.hr/docs/sortiranje-i-pretrazivanje/sortiranje">Sortiranje</a>, <a href="https://materijali.xfer.hr/docs/sortiranje-i-pretrazivanje/binarno-pretrazivanje">Binarno pretraživanje</a>, <a href="https://materijali.xfer.hr/docs/sortiranje-i-pretrazivanje/ternarno-pretrazivanje">Ternarno pretraživanje</a> — NatPro, X.FER (izvorni materijali poglavlja 1, 2 i 4).</li>
+      <li><a href="https://cp-algorithms.com/num_methods/ternary_search.html">cp-algorithms: Ternary Search</a>.</li>
+      <li>C. E. Shannon, <em>A Mathematical Theory of Communication</em>, 1948 — entropija i donja granica za kodove.</li>
+      <li>D. E. Knuth, <em>The Art of Computer Programming</em>, sv. 3, §5.3.1 (najmanji broj usporedbi, Ford–Johnson) i §5.3.4 (mreže za sortiranje).</li>
+      <li>K. E. Batcher, <em>Sorting networks and their applications</em>, AFIPS 1968 — bitonično i odd–even merge sortiranje.</li>
+      <li>Cormen, Leiserson, Rivest, Stein, <em>Introduction to Algorithms</em> — donje granice za sortiranje (pogl. 8); mreže za sortiranje (2. izdanje, pogl. 27).</li>
+      <li>Prezentacija: <a href="https://revealjs.com">reveal.js</a> (MIT); vizualizacije su vlastite, u mapi <code>assets/viz/</code>.</li>
+    </ul>
+  </section>
+</section>
+
+</div><!-- .slides -->
+<div class="deck-footer">Strukture podataka i algoritmi · Predavanje 1: Sortiranje i pretraživanje</div>
+</div><!-- .reveal -->
+
+<script src="vendor/reveal/reveal.js"></script>
+<script src="vendor/reveal/plugin/highlight.js"></script>
+<script src="vendor/reveal/plugin/notes.js"></script>
+<script src="vendor/reveal/plugin/zoom.js"></script>
+<script src="assets/viz/common.js"></script>
+<script src="assets/viz/bubble.js"></script>
+<script src="assets/viz/binsearch.js"></script>
+<script src="assets/viz/predicate.js"></script>
+<script src="assets/viz/questions.js"></script>
+<script src="assets/viz/tree.js"></script>
+<script src="assets/viz/entropy.js"></script>
+<script src="assets/viz/ternary.js"></script>
+<script src="assets/viz/bitonic.js"></script>
+<script src="assets/viz/order.js"></script>
+<script src="assets/viz/sorttree.js"></script>
+<script src="assets/main.js"></script>
+</body>
+</html>
