@@ -2,6 +2,8 @@
 
 Materials for a course on data structures and algorithms, organized by lecture.
 
+> **Novi ste na GitHubu?** Upute za preuzimanje i otvaranje prezentacije na Windowsima, bez ikakvog predznanja, su u [UPUTE.md](UPUTE.md).
+
 Each lecture is a **self-contained website used as a presentation** (reveal.js slides with interactive visualizations). Open the lecture's `index.html` in a browser; no build step or internet connection is needed.
 
 ## Structure
