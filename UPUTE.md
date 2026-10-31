@@ -29,7 +29,7 @@ Usput ćete, ako želite, naučiti osnovne pojmove. Dijelovi označeni s *(neoba
 4. **Raspakirajte ZIP** (ovo je važno — iz samog ZIP-a prezentacija neće raditi):
    - otvorite mapu *Downloads*,
    - desni klik na `Xfer-Predavanja-….zip` → **Extract All…** (*Izdvoji sve…*) → **Extract**.
-5. Otvorite raspakiranu mapu. U njoj je mapa čije ime počinje s `Xfer-Predavanja`, a u njoj mapa **`01-sorting-and-binary-search`**.
+5. Otvorite raspakiranu mapu. U njoj je mapa čije ime počinje s `Xfer-Predavanja`, a u njoj po jedna mapa za svako predavanje: **`01-sorting-and-binary-search`**, **`02-union-find`**, …
 6. U toj mapi **dvokliknite `index.html`**. Otvara se preglednik s prvim slajdom.
 
 To je sve. Prezentacija radi i bez interneta; možete je kopirati na USB.
@@ -69,7 +69,7 @@ Kod puta A nema automatskog osvježavanja: jednostavno ponovite korake 1–6 i o
    https://github.com/rsegvic/Xfer-Predavanja
    ```
 5. U polju *Local path* vidite gdje će mapa biti spremljena (obično `C:\Users\VašeIme\Documents\GitHub\Xfer-Predavanja`). Kliknite **Clone**.
-6. Kad se preuzimanje završi, kliknite **Repository → Show in Explorer**. Otvara se mapa `Xfer-Predavanja`; uđite u `01-sorting-and-binary-search` i dvokliknite **`index.html`**.
+6. Kad se preuzimanje završi, kliknite **Repository → Show in Explorer**. Otvara se mapa `Xfer-Predavanja`; uđite u mapu predavanja (npr. `01-sorting-and-binary-search`) i dvokliknite **`index.html`**.
 
 > **Rječnik:** *clone* (klonirati) znači „skini cijeli repozitorij, s poviješću, na svoje računalo”. Radi se samo jednom.
 
@@ -129,7 +129,7 @@ S besplatnim računom možete još:
 |---|---|
 | Dvoklik na `index.html` prikaže prazan ekran ili samo tekst | Niste raspakirali ZIP (otvorili ste datoteku *unutar* ZIP-a). Napravite korak 4 iz puta A. |
 | Otvorilo se u Internet Exploreru ili u programu za uređivanje | Desni klik na `index.html` → **Open with** (*Otvori pomoću*) → Edge, Chrome ili Firefox. |
-| Slajdovi se vide, ali vizualizacije ne reagiraju | Provjerite da se uz `index.html` nalaze mape `assets` i `vendor`. Ako ste kopirali samo `index.html`, kopirajte cijelu mapu `01-sorting-and-binary-search`. |
+| Slajdovi se vide, ali vizualizacije ne reagiraju | Provjerite da se uz `index.html` nalaze mape `assets` i `vendor`. Ako ste kopirali samo `index.html`, kopirajte cijelu mapu predavanja. |
 | Tipka `S` ne otvara prozor za predavača | Preglednik je blokirao skočni prozor; kliknite obavijest u adresnoj traci i dopustite ga. |
 | GitHub Desktop javlja da je mapa već zauzeta | Već ste jednom klonirali. Otvorite postojeći repozitorij kroz **File → Add local repository…** umjesto ponovnog kloniranja. |
 | Slajd se čudno prelama ili je tekst premalen | Pritisnite `F` za cijeli zaslon; prezentacija se skalira na veličinu prozora. |

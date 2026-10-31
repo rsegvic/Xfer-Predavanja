@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Union-find — predavanje</title>
+<link rel="stylesheet" href="vendor/reveal/reset.css">
+<link rel="stylesheet" href="vendor/reveal/reveal.css">
+<link rel="stylesheet" href="assets/theme.css">
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ===================================================================== -->
+<!-- 0. UVOD                                                                -->
+<!-- ===================================================================== -->
+<section>
+  <section class="title-slide">
+    <span class="kicker">Strukture podataka i algoritmi · Predavanje 2</span>
+    <h1>Union-find</h1>
+    <p class="sub">Struktura disjunktnih skupova: spajanje skupova i provjera pripadnosti<br>u gotovo konstantnom vremenu — i zašto je to „gotovo” tako zanimljivo</p>
+    <p class="meta">Temeljeno na materijalima <a href="https://materijali.xfer.hr/docs/algoritmi-nad-grafovima-1/union-find-struktura">NatPro — X.FER</a> (autorica Maja Milas), prošireno.<br>
+    Navigacija: <kbd>→</kbd> sljedeće poglavlje, <kbd>↓</kbd> sljedeći slajd, <kbd>Esc</kbd> pregled svih slajdova, <kbd>S</kbd> bilješke za predavača.</p>
+  </section>
+
+  <section>
+    <h2>Plan predavanja</h2>
+    <ol>
+      <li><strong>Problem dinamičke povezanosti</strong> — i dva naivna rješenja</li>
+      <li><strong>Struktura</strong> — predstavnici, <code>find</code>, <code>unite</code>, unija po veličini</li>
+      <li><strong>Kompresija puta</strong> — jedan redak koda koji mijenja sve</li>
+      <li><strong>Koliko to zapravo košta?</strong> — amortizirana analiza, <span class="m">log* n</span> i inverzna Ackermannova funkcija</li>
+      <li><strong>Primjene</strong> — komponente i ciklusi, Kruskalov algoritam, brisanje unatrag</li>
+      <li><strong>Proširenja</strong> — paritet i težine, malo u veliko, vraćanje operacija</li>
+      <li><strong>Zadaci</strong></li>
+    </ol>
+    <p class="small muted">Crvena nit: <em>svaka operacija smije biti skupa, ali cijeli niz operacija je jeftin.</em></p>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 1. PROBLEM                                                             -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 1</span>
+    <h1>Problem dinamičke povezanosti</h1>
+    <p>„Jesu li <span class="m">a</span> i <span class="m">b</span> u istoj grupi?” i „spoji grupe od <span class="m">a</span> i <span class="m">b</span>” — mnogo puta, brzo.</p>
+  </section>
+
+  <section>
+    <h2>Zadatak za zagrijavanje</h2>
+    <p class="small">U nekoj zemlji postoji <span class="m">n</span> gradova i <span class="m">m</span> cesta koje ih povezuju, a u svakom gradu na početku živi <span class="m">x</span> ljudi. Tijekom vremena neke se ceste urušavaju. Dolaze dvije vrste upita:</p>
+    <ul class="small">
+      <li><strong>D K</strong> — urušila se cesta <span class="m">K</span></li>
+      <li><strong>P A x</strong> — populacija grada <span class="m">A</span> postala je <span class="m">x</span></li>
+    </ul>
+    <p class="small">Nakon <strong>svakog</strong> upita treba reći koliko stanovnika ima trenutno najnaseljenija <em>regija</em> (skup gradova među kojima se može putovati cestama).</p>
+    <div class="callout note"><span class="label">Razmislite</span>
+      Ceste samo nestaju, regije se samo <em>dijele</em>. Kako bismo to pratili? Puni tekst: <a href="https://www.codechef.com/problems/ABROADS">CodeChef ABROADS</a>. Rješenje dolazi na kraju 5. poglavlja — i bit će iznenađujuće jednostavno.</div>
+  </section>
+
+  <section>
+    <h2>Dinamička povezanost</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Imamo <span class="m">n</span> elemenata raspoređenih u <strong>disjunktne skupove</strong> (nijedan element nije u dva skupa). Na početku je svaki element sam u svom skupu. Podržavamo dvije operacije:</p>
+        <ul class="small">
+          <li><code>same(a, b)</code> — jesu li <span class="m">a</span> i <span class="m">b</span> u istom skupu?</li>
+          <li><code>unite(a, b)</code> — spoji skup od <span class="m">a</span> sa skupom od <span class="m">b</span></li>
+        </ul>
+        <p class="small">Skupovi se samo <strong>spajaju</strong>, nikad ne dijele. To ograničenje je ono što strukturu čini tako brzom.</p>
+      </div>
+      <div>
+        <p class="small"><strong>Gdje se javlja:</strong></p>
+        <ul class="small">
+          <li>komponente povezanosti grafa koji <em>raste</em> (dodaju se bridovi)</li>
+          <li>Kruskalov algoritam za minimalno razapinjuće stablo</li>
+          <li>otkrivanje ciklusa u neusmjerenom grafu</li>
+          <li>klase ekvivalencije: „a = b, b = c, je li a = c?”</li>
+          <li>segmentacija slike, perkolacija na mreži, unifikacija tipova u prevoditeljima</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pristup 1: polje oznaka</h2>
+    <p class="small">Svakom elementu zapišemo <strong>oznaku skupa</strong>. <code>same</code> je jedna usporedba. Ali <code>unite</code> mora <em>prepisati</em> oznaku svakog elementa jednog od skupova — prođe kroz cijelo polje.</p>
+    <div class="viz" data-viz="labels" data-n="12"></div>
+    <div class="cols">
+      <div class="callout warn"><span class="label">Cijena</span> <code>same</code>: <span class="m">O(1)</span>. <code>unite</code>: <span class="m">O(n)</span>. Niz od <span class="m">m</span> unija: <span class="m">O(nm)</span>.</div>
+      <div class="callout tip"><span class="label">Prvo poboljšanje</span> Pamtimo popis elemenata svakog skupa i uvijek prepisujemo <strong>manji</strong> skup. Svaki element promijeni oznaku najviše <span class="m">log₂ n</span> puta → ukupno <span class="m">O(n log n)</span>. Zapamtite taj argument: vraća se u 6. poglavlju.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Pristup 2: šuma stabala</h2>
+    <p class="small">Svaki skup je <strong>stablo</strong>; element pamti samo <em>roditelja</em> (<code>link[x]</code>), a korijen je <strong>predstavnik</strong>. <code>find</code> se penje do korijena, <code>unite</code> spoji dva korijena. Nema prepisivanja — ali stabla mogu postati visoka: predložak „Lanac” (unije <span class="m">(1,0), (2,1), …</span>) daje dubinu <span class="m">n − 1</span>; isprobajte <em>find(a)</em> s <span class="m">a = 0</span>.</p>
+    <div class="viz" data-viz="dsu" data-n="12" data-bysize="0" data-compress="0" data-preset="chain" data-w="1000" data-h="270"></div>
+    <aside class="notes">Pustiti „Lanac” bez heuristika i find(0). Zatim uključiti uniju po veličini i opet „Lanac”: zvijezda. Zatim „Binomno”: dubina log n čak i s unijom po veličini — to je najgori slučaj za tu heuristiku.</aside>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 2. STRUKTURA                                                           -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 2</span>
+    <h1>Struktura</h1>
+    <p>Predstavnici, dvije operacije i prva heuristika: manji skup pod veći.</p>
+  </section>
+
+  <section>
+    <h2>Union-find (disjoint set union)</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Struktura raspodjeljuje elemente u <strong>skupove</strong>. Svaki skup ima <strong>predstavnika</strong> (representative), a elementi su lancem roditelja povezani s njim. Dva skupa spajamo tako da <em>povežemo njihove predstavnike</em>: jedan korijen postane dijete drugoga.</p>
+        <ul class="small">
+          <li><code>find(x)</code> — vraća predstavnika skupa koji sadrži <span class="m">x</span></li>
+          <li><code>unite(a, b)</code> — spaja skup od <span class="m">a</span> i skup od <span class="m">b</span></li>
+          <li><code>same(a, b)</code> — <code>find(a) == find(b)</code></li>
+        </ul>
+      </div>
+      <div>
+        <div class="callout thm"><span class="label">Ključna ideja</span>
+          Pamtimo samo <strong>roditelja</strong>. Spajanje je jedan zapis: <code>link[b] = a</code>. Sav posao seli se u <code>find</code>, koji se penje po stablu — pa je visina stabla sve što određuje cijenu.</div>
+        <p class="small">Dvije heuristike drže stabla niskima: <strong>unija po veličini</strong> (ovo poglavlje) i <strong>kompresija puta</strong> (sljedeće). Zajedno daju <em>gotovo konstantno</em> vrijeme po operaciji.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Implementacija</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Polje <code>link</code>: na <span class="m">i</span>-tom mjestu roditelj elementa <span class="m">i</span> (predstavnik pokazuje sam na sebe). Polje <code>len</code>: za predstavnike, veličina skupa. Na početku je svaki element sam svoj predstavnik, a sve veličine su 1.</p>
+<pre><code class="language-cpp" data-trim>
+for (int i = 0; i &lt; n; i++) link[i] = i;
+for (int i = 0; i &lt; n; i++) len[i] = 1;
+
+int find(int x) {
+    while (x != link[x]) x = link[x];   // penji se do korijena
+    return x;
+}
+
+bool same(int a, int b) {
+    return find(a) == find(b);
+}
+</code></pre>
+      </div>
+      <div>
+        <p class="small"><code>unite</code> nađe oba predstavnika i <strong>manji skup objesi pod veći</strong>:</p>
+<pre><code class="language-cpp" data-trim>
+void unite(int a, int b) {
+    a = find(a);
+    b = find(b);
+    if (a == b) return;                 // već u istom skupu
+    if (len[a] &lt; len[b]) swap(a, b);    // a je veći
+    len[a] += len[b];
+    link[b] = a;                        // b-ov korijen pod a-ov
+}
+</code></pre>
+        <p class="small muted">Memorija: dva polja cijelih brojeva. Bez rekurzije, bez pokazivača — zato je ovo jedna od najčešćih struktura na natjecanjima.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Unija po veličini: zašto <span class="m">log₂ n</span>?</h2>
+    <div class="cols">
+      <div>
+        <div class="callout thm"><span class="label">Lema</span>
+          Ako uvijek vješamo manji skup pod veći, svako stablo s <span class="m">k</span> elemenata ima dubinu najviše <span class="m">log₂ k</span>. Dakle <code>find</code> košta <span class="m">O(log n)</span>.</div>
+        <p class="small"><strong>Dokaz.</strong> Pratimo jedan element <span class="m">x</span>. Njegova dubina raste za 1 samo kad njegov korijen postane dijete drugog korijena. Tada se njegov skup spaja s barem jednako velikim, pa se <strong>veličina skupa barem udvostruči</strong>. Veličina ne može prijeći <span class="m">n</span>, pa se to dogodi najviše <span class="m">log₂ n</span> puta. ∎</p>
+        <p class="small">Granica je <strong>dostižna</strong>: spajanjem jednako velikih skupova (parovi, pa četvorke, pa osmice…) nastaje binomno stablo dubine točno <span class="m">log₂ n</span>. Predložak „Binomno” desno.</p>
+      </div>
+      <div class="viz" data-viz="dsu" data-n="8" data-bysize="1" data-compress="0" data-preset="binom" data-compact="1"></div>
+    </div>
+    <p class="small muted"><strong>Unija po rangu</strong>: umjesto veličine pamtimo <em>rang</em> (gornju granicu visine), koji raste samo pri spajanju dvaju stabala istog ranga. Ista granica; koristi se u dokazu u 4. poglavlju.</p>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 3. KOMPRESIJA PUTA                                                     -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 3</span>
+    <h1>Kompresija puta</h1>
+    <p>Kad se već penjemo do korijena, usput prevežimo sve što smo prošli izravno na njega.</p>
+  </section>
+
+  <section>
+    <h2>Ideja: <code>find</code> koji popravlja stablo</h2>
+    <div class="cols">
+      <div>
+        <p class="small"><code>find(x)</code> prođe putem <span class="m">x → … → korijen</span>. Sve čvorove na putu odmah <strong>prevežemo izravno na korijen</strong>: predstavnik ostaje isti, a sljedeći <code>find</code> bilo kojeg od njih košta jedan korak.</p>
+<pre><code class="language-cpp" data-trim>
+int find(int x) {
+    if (link[x] == x) return x;
+    return link[x] = find(link[x]);  // usput preveži x na korijen
+}
+</code></pre>
+        <p class="small">Isto bez rekurzije (dva prolaza):</p>
+<pre><code class="language-cpp" data-trim>
+int find(int x) {
+    int r = x;
+    while (link[r] != r) r = link[r];           // 1. nađi korijen
+    while (link[x] != r) {                      // 2. preveži put
+        int nx = link[x]; link[x] = r; x = nx;
+    }
+    return r;
+}
+</code></pre>
+      </div>
+      <div>
+        <div class="viz" data-viz="dsu" data-n="8" data-bysize="1" data-compress="1" data-preset="binom" data-compact="1"></div>
+        <p class="small muted">„Binomno”, pa u načinu <em>klik: find</em> kliknite 7: put se spljošti.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Varijante i što dobivamo</h2>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>Prepolavljanje puta</strong> (path halving) — jedan prolaz, svaki čvor preskoči roditelja:</p>
+<pre><code class="language-cpp" data-trim>
+int find(int x) {
+    while (link[x] != x) {
+        link[x] = link[link[x]];   // preskoči jednu razinu
+        x = link[x];
+    }
+    return x;
+}
+</code></pre>
+        <p class="small"><strong>Razdvajanje puta</strong> (path splitting) je slično. Tarjan i van Leeuwen (1984) pokazali su da sve tri varijante imaju <em>istu</em> asimptotiku, a prepolavljanje je u praksi često najbrže.</p>
+      </div>
+      <div>
+        <table>
+          <tr><th>heuristike</th><th>jedan <code>find</code>, najgore</th><th>po operaciji, amortizirano</th></tr>
+          <tr><td>ništa</td><td class="num"><span class="m">O(n)</span></td><td class="num"><span class="m">O(n)</span></td></tr>
+          <tr><td>unija po veličini</td><td class="num"><span class="m">O(log n)</span></td><td class="num"><span class="m">O(log n)</span></td></tr>
+          <tr><td>samo kompresija</td><td class="num"><span class="m">O(n)</span></td><td class="num"><span class="m">O(log n)</span></td></tr>
+          <tr><td><strong>oboje</strong></td><td class="num"><span class="m">O(log n)</span></td><td class="num"><strong><span class="m">O(α(n))</span></strong></td></tr>
+        </table>
+        <p class="small muted">Samo kompresija: ukupno <span class="m">Θ(m · log<sub>1+m/n</sub> n)</span> za <span class="m">m</span> operacija. Oboje: <span class="m">O(m · α(n))</span>, gdje je <span class="m">α</span> inverzna Ackermannova funkcija — u praksi <span class="m">α(n) ≤ 4</span>.</p>
+        <p class="small">Što znači „amortizirano”? Sljedeće poglavlje.</p>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 4. KOLIKO TO KOŠTA?                                                    -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 4</span>
+    <h1>Koliko to zapravo košta?</h1>
+    <p>Amortizirana analiza, mjerenje, skica dokaza i funkcija koja raste sporije od svega što ćete ikad sresti.</p>
+  </section>
+
+  <section>
+    <h2>Amortizirana složenost</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Pojedini <code>find</code> uz kompresiju može koštati <span class="m">O(log n)</span> koraka. Ali taj isti posao <em>popravi stablo</em>, pa sljedeći pozivi budu jeftiniji. Pitamo zato:</p>
+        <div class="callout thm"><span class="label">Definicija</span>
+          Niz od <span class="m">m</span> operacija ima <strong>amortiziranu cijenu</strong> <span class="m">T</span> po operaciji ako ukupno košta najviše <span class="m">m · T</span> — za <em>svaki</em> mogući niz. Pojedina operacija smije biti skuplja, dok je prosjek preko niza ograničen.</div>
+        <p class="small">Poznati primjer: <code>vector::push_back</code>. Povremeno kopira cijelo polje (<span class="m">O(n)</span>), ali udvostručavanje kapaciteta daje <span class="m">O(1)</span> amortizirano.</p>
+      </div>
+      <div>
+        <p class="small"><strong>Kako se to dokazuje?</strong> Metoda potencijala: skupa operacija <em>smanjuje</em> neku mjeru „nereda” u strukturi (ovdje: koliko su stabla visoka), a jeftine je operacije polako grade. Nered je ograničen, pa i ukupna cijena.</p>
+        <div class="callout key"><span class="label">Za union-find</span>
+          Svaki niz od <span class="m">m</span> operacija <code>find</code>/<code>unite</code> nad <span class="m">n</span> elemenata, uz uniju po rangu i kompresiju puta, košta <span class="m">O(m · α(n))</span> (Tarjan, 1975). Nijedan pojedini <code>find</code> nije skuplji od <span class="m">O(log n)</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Mjerenje u pregledniku</h2>
+    <p class="small">Koliko koraka (praćenja <code>link[x]</code>) troši prosječan <code>find</code>? Dva testa: slučajne unije i zlonamjerni „lanac”. Pokrenite i usporedite retke.</p>
+    <div class="viz" data-viz="bench"></div>
+    <p class="small muted">Primijetite: s obje heuristike prosječan <code>find</code> košta oko jedan korak, a najveća dubina nakon unija ostaje malena. Samo kompresija je u slučajnom testu gotovo jednako dobra — i zato ju mnogi natjecatelji koriste bez unije po veličini. Lanac pokazuje zašto je to ipak rizik bez druge heuristike… i zašto je kompresija sama ipak bitno bolja od ničega.</p>
+    <aside class="notes">Bez heuristika: lanac dubine 9999, prosječan find ≈ 5000 koraka; u slučajnom testu dubina u tisućama. Unija po veličini: dubina ≤ 14. Samo kompresija na lancu: prvi find-ovi su skupi, kasnije jeftini — amortizacija na djelu.</aside>
+  </section>
+
+  <section>
+    <h2>Skica dokaza: <span class="m">O((m + n) · log* n)</span></h2>
+    <p class="small">Dokazujemo slabiju, ali i dalje nevjerojatnu granicu (Hopcroft i Ullman, 1973). Koristimo <strong>uniju po rangu</strong>: <span class="m">rang(x)</span> je gornja granica visine podstabla kad je <span class="m">x</span> bio korijen.</p>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>Svojstva rangova</strong> (sva se dokazuju u par redaka):</p>
+        <ol class="small">
+          <li>Rang se mijenja samo dok je čvor korijen; kad postane dijete, zauvijek je fiksan.</li>
+          <li>Na putu prema korijenu rangovi <strong>strogo rastu</strong>: <span class="m">rang(x) &lt; rang(link[x])</span>. Kompresija to čuva (novi roditelj je predak starog).</li>
+          <li>Čvorova ranga <span class="m">r</span> ima najviše <span class="m">n / 2<sup>r</sup></span> (podstablo ranga <span class="m">r</span> ima bar <span class="m">2<sup>r</sup></span> čvorova u trenutku nastanka, a ta su podstabla disjunktna).</li>
+          <li>Najveći rang je <span class="m">≤ log₂ n</span>.</li>
+        </ol>
+      </div>
+      <div>
+        <p class="small"><strong>Grupiranje rangova u razrede.</strong> Rang <span class="m">r</span> stavimo u razred prema <span class="m">log* r</span>: razredi su <span class="mr">{1}, {2}, {3, 4}, {5, …, 16}, {17, …, 65536}, …</span> Svaki sljedeći razred seže do <span class="m">2<sup>gornja granica prethodnog</sup></span>. Rangova ima <span class="m">≤ log₂ n</span>, pa <strong>razreda ima <span class="m">O(log* n)</span></strong>.</p>
+        <div class="callout note"><span class="label">log*</span>
+          <span class="m">log* n</span> = koliko puta treba primijeniti <span class="m">log₂</span> da od <span class="m">n</span> dođemo do <span class="m">≤ 1</span>. <span class="m">log* 65536 = 4</span>, <span class="m">log* 2<sup>65536</sup> = 5</span>. Za svaki <span class="m">n</span> koji stane u računalo, <span class="m">log* n ≤ 5</span>.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Skica dokaza: naplata koraka</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Promotrimo <code>find(x)</code> i put <span class="m">x = v₀ → v₁ → … → korijen</span>. Svaki korak <span class="m">v<sub>i</sub> → v<sub>i+1</sub></span> naplaćujemo <strong>jednome od dvoje</strong>:</p>
+        <ul class="small">
+          <li><strong>Operaciji</strong>, ako su <span class="m">rang(v<sub>i</sub>)</span> i <span class="m">rang(v<sub>i+1</sub>)</span> u <em>različitim</em> razredima (ili je <span class="m">v<sub>i+1</sub></span> korijen ili njegovo dijete). Rangovi rastu duž puta, pa takvih koraka ima najviše <span class="m">O(log* n)</span> po operaciji.</li>
+          <li><strong>Čvoru <span class="m">v<sub>i</sub></span></strong>, ako su u <em>istom</em> razredu. Nakon kompresije <span class="m">v<sub>i</sub></span> dobije novog roditelja s <strong>strogo većim</strong> rangom. Unutar razreda <span class="mr">[r, 2<sup>r</sup>⟩</span> to se može dogoditi najviše <span class="m">2<sup>r</sup></span> puta, a onda roditelj iskače iz razreda i čvor se više nikad ne naplaćuje.</li>
+        </ul>
+      </div>
+      <div>
+        <p class="small"><strong>Zbrajanje po razredima.</strong> U razredu koji počinje rangom <span class="m">r</span> ima najviše <span class="m">n/2<sup>r</sup> + n/2<sup>r+1</sup> + … ≤ 2n/2<sup>r</sup></span> čvorova, a svaki plaća najviše <span class="m">2<sup>r</sup></span> puta: ukupno <span class="m">≤ 2n</span> po razredu. Razreda je <span class="m">O(log* n)</span>.</p>
+        <div class="callout key"><span class="label">Rezultat</span>
+          Operacije plaćaju <span class="m">O(m · log* n)</span>, čvorovi <span class="m">O(n · log* n)</span>. Ukupno <span class="eq">O((m + n) · log* n)</span>
+          Finija podjela rangova (Tarjan) daje <span class="m">O(m · α(n))</span>. Ideja je ista: skupi koraci su rijetki jer svaki trajno popravi stablo.</div>
+      </div>
+    </div>
+    <aside class="notes">Ključna rečenica: svaki korak naplaćujemo ili find-u (malo takvih po find-u) ili čvoru (malo takvih po čvoru ukupno). Nema trećeg. To je cijela amortizirana analiza.</aside>
+  </section>
+
+  <section>
+    <h2>Inverzna Ackermannova funkcija <span class="m">α(n)</span></h2>
+    <div class="cols w-3-2">
+      <div>
+        <p class="small">Ackermannova funkcija raste brže od bilo koje eksponencijalne, dvostruko eksponencijalne, … funkcije. Njezin inverz <span class="m">α(n)</span> raste <strong>sporije od bilo čega što ćete sresti</strong>:</p>
+        <table>
+          <tr><th class="num">n (do)</th><th class="num">α(n)</th><th class="num">log* n</th></tr>
+          <tr><td class="num">3</td><td class="num">1</td><td class="num">2</td></tr>
+          <tr><td class="num">7</td><td class="num">2</td><td class="num">3</td></tr>
+          <tr><td class="num">2047</td><td class="num">3</td><td class="num">4</td></tr>
+          <tr><td class="num">2<sup>2047</sup> (≈ 10<sup>616</sup>) i daleko više</td><td class="num">4</td><td class="num">5 … </td></tr>
+        </table>
+        <p class="small muted">Za sve <span class="m">n</span> do broja atoma u vidljivom svemiru (≈ 10<sup>80</sup>) vrijedi <span class="m">α(n) ≤ 4</span>. U praksi je union-find <em>konstantno</em> vrijeme po operaciji.</p>
+      </div>
+      <div>
+        <div class="callout thm"><span class="label">Teorem (Tarjan, 1975)</span>
+          Uz uniju po rangu (ili veličini) i kompresiju puta, <span class="m">m</span> operacija nad <span class="m">n</span> elemenata košta <span class="m">O(m · α(n))</span>.</div>
+        <div class="callout note"><span class="label">A bolje?</span>
+          Ne. Fredman i Saks (1989): svaka struktura ove vrste treba <span class="m">Ω(α(n))</span> amortizirano po operaciji. Union-find je, dakle, <strong>optimalan</strong> — i jedna od rijetkih struktura čija je točna složenost poznata.</div>
+        <p class="small muted">Seidel i Sharir (2005) daju moderni, kraći dokaz „odozgo prema dolje”.</p>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 5. PRIMJENE                                                            -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 5</span>
+    <h1>Primjene</h1>
+    <p>Komponente i ciklusi, Kruskalov algoritam, brisanje unatrag — i rješenje zadatka s početka.</p>
+  </section>
+
+  <section>
+    <h2>Komponente povezanosti i ciklusi</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Neusmjereni graf dan je popisom bridova. Prolazimo bridove redom i spajamo krajeve. Brid čiji su krajevi <strong>već u istom skupu</strong> zatvara <strong>ciklus</strong>. Broj komponenti pada za 1 sa svakom uspješnom unijom.</p>
+<pre><code class="language-cpp" data-trim>
+int komponente = n;
+for (auto [a, b] : bridovi) {
+    if (same(a, b)) {
+        // brid (a, b) zatvara ciklus
+    } else {
+        unite(a, b);
+        komponente--;
+    }
+}
+</code></pre>
+      </div>
+      <div>
+        <ul class="small">
+          <li>Graf je <strong>stablo</strong> ⇔ povezan i nijedan brid ne zatvara ciklus (ekvivalentno: <span class="m">m = n − 1</span> i povezan).</li>
+          <li>Radi i kad bridovi dolaze <em>jedan po jedan</em> (online) — za razliku od DFS-a, ne treba ponovno pretraživati.</li>
+          <li>Isto na mreži: polja su čvorovi, susjedna „kopnena” polja se spajaju → broj otoka, najveći otok, perkolacija.</li>
+        </ul>
+        <div class="callout tip"><span class="label">Savjet</span> Kad vidite „dodaj brid” i „jesu li povezani?” bez brisanja, union-find je gotovo uvijek pravi alat. S brisanjem — pogledajte slajd o brisanju unatrag.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Minimalno razapinjuće stablo i Kruskalov algoritam</h2>
+    <div class="cols">
+      <div>
+        <p class="small"><strong>Razapinjuće stablo</strong> grafa je podgraf sa svim vrhovima i nekim bridovima koji je stablo. <strong>Minimalno</strong> (MST) je ono s najmanjim zbrojem težina. Ne mora biti jedinstveno.</p>
+        <p class="small"><strong>Kruskal:</strong> sortiraj bridove po težini i dodaj svaki koji <em>ne zatvara ciklus</em>. Provjera ciklusa je upravo <code>same</code>, dodavanje je <code>unite</code>.</p>
+<pre><code class="language-cpp" data-trim>
+vector&lt;tuple&lt;int,int,int&gt;&gt; edgeList;  // (w, a, b)
+sort(edgeList.begin(), edgeList.end());
+long long ukupno = 0;
+for (auto [w, a, b] : edgeList) {
+    if (same(a, b)) continue;          // ciklus
+    unite(a, b);
+    ukupno += w;
+}
+</code></pre>
+        <p class="small muted">Složenost: <span class="m">O(m log m)</span> za sortiranje; union-find dio je <span class="m">O(m · α(n))</span>.</p>
+      </div>
+      <div>
+        <p class="small"><strong>Zašto radi?</strong> Neka je <span class="m">e</span> najlakši brid koji Kruskal dodaje između dva trenutno nespojena dijela. Svako razapinjuće stablo mora te dijelove spojiti <em>nekim</em> bridom <span class="m">f</span> preko istog „reza”, a <span class="m">w(f) ≥ w(e)</span>. Zamjena <span class="m">f</span> s <span class="m">e</span> ne povećava težinu — pa postoji optimalno stablo koje sadrži <span class="m">e</span>. Induktivno: Kruskalov izbor je uvijek dio nekog MST-a.</p>
+        <div class="callout note"><span class="label">Primijetite</span> Kruskalov algoritam je <em>pohlepan</em>: nikad ne odustaje od dodanog brida. Union-find mu daje provjeru ciklusa u gotovo konstantnom vremenu — bez njega bi svaka provjera bila obilazak grafa.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Kruskal — vizualizacija</h2>
+    <p class="small">Težina brida ≈ njegova duljina. Popis desno je sortiran; boja oboda vrha je njegov skup. Odbačeni bridovi (crveno) spajaju vrhove istog skupa.</p>
+    <div class="viz" data-viz="kruskal" data-n="10"></div>
+  </section>
+
+  <section>
+    <h2>Brisanje unatrag (offline trik)</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Union-find ne zna <strong>brisati</strong> bridove. Ali ako su svi upiti poznati unaprijed (<em>offline</em>), brisanje čitano <strong>unatrag</strong> postaje dodavanje:</p>
+        <ol class="small">
+          <li>Primijeni sva brisanja: izgradi strukturu od bridova koji <em>prežive</em>.</li>
+          <li>Obrađuj upite od <strong>zadnjeg prema prvom</strong>. Odgovor na upit <span class="m">i</span> je trenutno stanje; zatim „poništi” brisanje — dodaj brid natrag (<code>unite</code>).</li>
+          <li>Ispiši odgovore u izvornom redoslijedu.</li>
+        </ol>
+<pre><code class="language-cpp" data-trim>
+// upit i: obriši brid k_i; svi bridovi koji nisu
+// ni u jednom upitu odmah su spojeni unite-om
+for (int i = q - 1; i &gt;= 0; i--) {
+    odgovor[i] = komponente;        // stanje NAKON upita i
+    if (!same(a[k_i], b[k_i])) komponente--;
+    unite(a[k_i], b[k_i]);          // vrati brid
+}
+</code></pre>
+      </div>
+      <div>
+        <div class="viz" data-viz="offline" data-n="9"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Rješenje zadatka s početka</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Gradovi, ceste koje se urušavaju, promjene populacije, najnaseljenija regija nakon svakog upita.</p>
+        <ol class="small">
+          <li><strong>Pročitaj sve upite.</strong> Označi ceste koje se ikad uruše; preostale odmah spoji. Primijeni sve promjene populacije da dobiješ <em>konačne</em> populacije; za svaki upit <strong>P</strong> zapamti <em>prethodnu</em> vrijednost grada.</li>
+          <li>Za svaki skup drži <code>suma[predstavnik]</code>; sve sume stavi u <code>multiset</code>.</li>
+          <li>Upite obrađuj <strong>unatrag</strong>. Odgovor = najveći element multiseta.
+            <ul>
+              <li><strong>D K</strong> unatrag = dodaj cestu: <code>unite</code>, izbriši dvije stare sume iz multiseta, ubaci zbroj.</li>
+              <li><strong>P A x</strong> unatrag = vrati staru populaciju grada <span class="m">A</span>: ažuriraj sumu njegovog skupa u multisetu.</li>
+            </ul></li>
+        </ol>
+      </div>
+      <div>
+        <div class="callout key"><span class="label">Složenost</span> Svaki upit: jedan <code>find</code>/<code>unite</code> (<span class="m">α(n)</span>) i par operacija nad multisetom (<span class="m">log n</span>). Ukupno <span class="m">O((n + m + q) log n)</span>.</div>
+        <p class="small">Poanta nije u detaljima, nego u obratu: <em>problem s brisanjem postao je problem s dodavanjem</em>, a za dodavanje imamo gotovo besplatnu strukturu.</p>
+        <p class="small muted">Isti trik rješava „broj parova nepovezanih gradova nakon svakog rušenja mosta”, „kad se dva vrha razdvoje” i slične zadatke — vidi popis na kraju.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Trik: „sljedeći slobodni”</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Union-find nad <em>indeksima</em>: <code>nxt[i]</code> = najmanji još slobodan indeks <span class="m">≥ i</span>. Kad zauzmemo <span class="m">i</span>, prevežemo ga na <span class="m">i + 1</span>; kompresija puta onda preskače cijele blokove zauzetih polja.</p>
+<pre><code class="language-cpp" data-trim>
+// na početku nxt[i] = i za 0 ≤ i ≤ n (nxt[n] = n je "nema slobodnih")
+int slobodan(int i) {
+    return nxt[i] == i ? i : nxt[i] = slobodan(nxt[i]);
+}
+void zauzmi(int i) { nxt[i] = i + 1; }
+
+// oboji sve još neobojene pozicije u [l, r]
+for (int i = slobodan(l); i &lt;= r; i = slobodan(i + 1)) {
+    boja[i] = c;
+    zauzmi(i);
+}
+</code></pre>
+      </div>
+      <div>
+        <ul class="small">
+          <li>Svaka pozicija se zauzme najviše jednom, pa je ukupno <span class="m">O((n + q) · α(n))</span> bez obzira na to koliko se intervali preklapaju.</li>
+          <li>Tipična primjena: bojanje intervala „zadnji sloj pobjeđuje” — obrađuj upite <strong>unatrag</strong> i boji samo još neobojeno.</li>
+          <li>Isti oblik: „k-ti slobodan stol”, „sljedeća neposjećena pozicija” u BFS-u po nizu, parkiranje.</li>
+        </ul>
+        <div class="callout tip"><span class="label">Opća slika</span> Union-find nije samo za grafove: svaki put kad se elementi <em>trajno</em> grupiraju ili kad pokazivač „sljedeći” samo napreduje, struktura daje gotovo konstantne operacije.</div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 6. PROŠIRENJA                                                          -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Poglavlje 6</span>
+    <h1>Proširenja</h1>
+    <p>Podaci po skupu, paritet i težine na putu, malo u veliko, vraćanje operacija.</p>
+  </section>
+
+  <section>
+    <h2>Podaci po skupu</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Sve što se može <strong>spojiti iz dva dijela</strong> možemo držati u predstavniku: veličinu, zbroj, najmanji element, broj bridova, bitmasku boja… Pri uniji spojimo vrijednosti u novom korijenu.</p>
+<pre><code class="language-cpp" data-trim>
+void unite(int a, int b) {
+    a = find(a); b = find(b);
+    if (a == b) { bridova[a]++; return; }   // brid unutar skupa
+    if (len[a] &lt; len[b]) swap(a, b);
+    link[b] = a;
+    len[a]     += len[b];
+    suma[a]    += suma[b];
+    najmanji[a] = min(najmanji[a], najmanji[b]);
+    bridova[a] += bridova[b] + 1;
+}
+</code></pre>
+      </div>
+      <div>
+        <ul class="small">
+          <li>Vrijednost je valjana <strong>samo u predstavniku</strong>; uvijek čitajte <code>suma[find(x)]</code>.</li>
+          <li>Promjena vrijednosti jednog elementa: ažurirajte vrijednost njegova predstavnika.</li>
+          <li>„Broj bridova = broj vrhova” po komponenti (točno jedan ciklus), „je li komponenta stablo”, „zbroj populacije regije” iz zadatka s početka — sve isti obrazac.</li>
+        </ul>
+        <div class="callout warn"><span class="label">Oprez</span> Operacija mora biti <em>asocijativna</em> i računata samo iz dvaju dijelova. Medijan ili broj različitih vrijednosti to nisu — za njih treba trik „malo u veliko” (za dva slajda).</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Union-find s paritetom: je li graf bipartitan?</h2>
+    <div class="cols w-2-3">
+      <div>
+        <p class="small">Uz roditelja pamtimo i <strong>paritet puta</strong> do njega: <code>par[x] ∈ {0, 1}</code>. Paritet do korijena je zbroj (XOR) duž puta; kompresija ga usput zbraja. Brid <span class="m">(u, v)</span> zahtijeva da <span class="m">u</span> i <span class="m">v</span> imaju <strong>različit</strong> paritet.</p>
+        <ul class="small">
+          <li>Različiti skupovi: spoji ih i postavi paritet korijena tako da uvjet vrijedi.</li>
+          <li>Isti skup, različit paritet: brid zatvara <em>parni</em> ciklus — u redu.</li>
+          <li>Isti skup, <strong>isti paritet</strong>: neparni ciklus → graf <strong>nije bipartitan</strong>.</li>
+        </ul>
+        <p class="small muted">Radi i online: bridovi dolaze jedan po jedan, a mi nakon svakog znamo je li graf još bipartitan. Isti mehanizam vodi „prijatelj/neprijatelj” relacije.</p>
+      </div>
+      <div class="viz" data-viz="parity" data-n="8"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Implementacija s paritetom i općenito s težinama</h2>
+    <div class="cols">
+      <div>
+<pre><code class="language-cpp" data-trim>
+int link[N], par[N];   // par[x] = paritet puta x → link[x]
+
+pair&lt;int,int&gt; find(int x) {   // (predstavnik, paritet x → predstavnik)
+    if (link[x] == x) return {x, 0};
+    auto [r, p] = find(link[x]);
+    link[x] = r; par[x] ^= p;    // kompresija: x sad pokazuje na r
+    return {r, par[x]};
+}
+
+bool dodajBrid(int a, int b) {   // false = neparni ciklus
+    auto [ra, pa] = find(a);
+    auto [rb, pb] = find(b);
+    if (ra == rb) return pa != pb;
+    link[rb] = ra;
+    par[rb] = pa ^ pb ^ 1;       // a i b dobiju različit paritet
+    return true;
+}
+</code></pre>
+      </div>
+      <div>
+        <p class="small"><strong>Težinski union-find.</strong> Umjesto parnosti pamtimo <strong>razliku</strong>: <code>pot[x] = v(x) − v(link[x])</code>. Uvjet „<span class="m">v(b) − v(a) = d</span>” (npr. „<span class="m">b</span> stoji <span class="m">d</span> metara desno od <span class="m">a</span>”) dodaje se isto kao brid, a nekonzistentan uvjet se otkrije usporedbom razlika.</p>
+<pre><code class="language-cpp" data-trim>
+// find vraća (r, v(x) − v(r)), uz pot[x] += d pri kompresiji
+bool dodaj(int a, int b, long long d) {   // v(b) − v(a) = d
+    auto [ra, da] = find(a);
+    auto [rb, db] = find(b);
+    if (ra == rb) return db - da == d;    // konzistentno?
+    link[rb] = ra;
+    pot[rb] = da + d - db;                // v(rb) − v(ra)
+    return true;
+}
+</code></pre>
+        <p class="small muted">Paritet je težinski union-find s vrijednostima modulo 2. Zadaci: <em>People on a Line</em>, <em>Good Set Query</em>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Malo u veliko (small to large)</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Treba li po skupu držati <em>cijeli</em> skup vrijednosti (npr. koliko različitih boja ima u komponenti), vrijednosti se ne mogu samo zbrojiti. Rješenje: svaki skup drži svoj <code>set</code>/<code>map</code>, a pri uniji <strong>manji prelijevamo u veći</strong>.</p>
+<pre><code class="language-cpp" data-trim>
+set&lt;int&gt; S[N];   // vrijednosti skupa, valjano samo u predstavniku
+
+void unite(int a, int b) {
+    a = find(a); b = find(b);
+    if (a == b) return;
+    if (S[a].size() &lt; S[b].size()) swap(a, b);
+    for (int x : S[b]) S[a].insert(x);  // manji u veći
+    S[b].clear();
+    link[b] = a;
+}
+</code></pre>
+      </div>
+      <div>
+        <div class="callout thm"><span class="label">Lema</span>
+          Svaki element se <em>preseli</em> najviše <span class="m">log₂ n</span> puta: pri svakom seljenju skup u kojem se nalazi barem se udvostruči. Ukupno <span class="m">O(n log n)</span> umetanja, tj. <span class="m">O(n log² n)</span> s <code>set</code>-om.</div>
+        <p class="small">Isti argument kao za uniju po veličini u 2. poglavlju i za „prepiši manji skup” u 1. poglavlju — ovo je treći put da ga srećemo. Vrijedi ga zapamtiti kao <em>obrazac</em>: kad god spajate strukture, spajajte manju u veću.</p>
+        <p class="small muted">Zadatak: <em>Confluence</em> (ABC 183 F) — po komponenti <code>map</code> razred → broj učenika.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Vraćanje operacija (rollback)</h2>
+    <div class="cols">
+      <div>
+        <p class="small">Ponekad treba <strong>poništiti zadnju uniju</strong> (pretraživanje s vraćanjem, podjela po vremenu). Kompresija puta mijenja mnogo pokazivača odjednom, pa je se odričemo; unija po veličini ostaje i daje <span class="m">O(log n)</span> po operaciji — i dalje odlično.</p>
+<pre><code class="language-cpp" data-trim>
+vector&lt;pair&lt;int,int&gt;&gt; stog;   // (dijete, stara veličina roditelja)
+
+void unite(int a, int b) {        // BEZ kompresije puta
+    a = find(a); b = find(b);
+    if (a == b) { stog.push_back({-1, 0}); return; }
+    if (len[a] &lt; len[b]) swap(a, b);
+    stog.push_back({b, len[a]});
+    link[b] = a; len[a] += len[b];
+}
+void undo() {
+    auto [b, stara] = stog.back(); stog.pop_back();
+    if (b &lt; 0) return;
+    len[link[b]] = stara; link[b] = b;
+}
+</code></pre>
+      </div>
+      <div>
+        <ul class="small">
+          <li>Svaka unija promijeni točno dvije vrijednosti, pa je poništavanje <span class="m">O(1)</span>.</li>
+          <li>Poništavati se može samo <strong>u obrnutom redoslijedu</strong> (stog), ne proizvoljnu uniju.</li>
+          <li>Uz „segmentno stablo nad vremenom” (svaki brid živi na intervalu vremena) to rješava <em>offline dinamičku povezanost</em> s dodavanjem <strong>i</strong> brisanjem u <span class="m">O(log² n)</span> po bridu — tema za neko sljedeće predavanje.</li>
+        </ul>
+        <div class="callout key"><span class="label">Sažetak proširenja</span>
+          Podaci po skupu: spoji u korijenu. Relacije (paritet, razlika): pamti ih na bridu prema roditelju. Cijeli skupovi: malo u veliko. Brisanje: unatrag ili s vraćanjem.</div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<!-- ===================================================================== -->
+<!-- 7. ZAKLJUČAK                                                           -->
+<!-- ===================================================================== -->
+<section>
+  <section class="chapter" data-background-color="#0f2a4a">
+    <span class="kicker">Zaključak</span>
+    <h1>Što ponijeti kući</h1>
+    <ol>
+      <li>Skupovi koji se samo spajaju: šuma stabala s roditeljskim pokazivačima, dvije operacije.</li>
+      <li>Unija po veličini: dubina <span class="m">≤ log₂ n</span>. Kompresija puta: svaki <code>find</code> popravlja stablo.</li>
+      <li>Zajedno: <span class="m">O(α(n))</span> amortizirano — i to je dokazano optimalno.</li>
+      <li>Amortizirana analiza: skupe operacije su rijetke jer svaka trajno smanji nered.</li>
+      <li>Primjene: komponente, ciklusi, Kruskal, brisanje unatrag, „sljedeći slobodni”.</li>
+      <li>Proširenja: podaci u korijenu, paritet/težine na putu, malo u veliko, vraćanje.</li>
+    </ol>
+  </section>
+
+
+
+  <section>
+    <h2>Zadaci (1/5)</h2>
+    <p class="small muted">Zadatak iz izvornih materijala: <a href="https://www.codechef.com/problems/ABROADS">ABROADS</a> (CodeChef) — rješenje je na slajdu „Rješenje zadatka s početka”. Ocjene su Codeforces <em>rating</em> (ispod 1800, osim izazova); AtCoder zadaci su navedeni po poziciji: ABC C ≈ 1000, D ≈ 1300, E ≈ 1600, F ≈ 1900 po Codeforcesovoj ljestvici (okvirno).</p>
+    <table class="tasks">
+      <tr><th>Zadatak</th><th class="num">Ocjena</th><th>Natuknica</th></tr>
+            <tr><th colspan="3">Komponente, brojanje, osnovne unije</th></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc284/tasks/abc284_c">ABC 284 C — Count Connected Components</a></td><td class="num">ABC C</td><td>Spoji krajeve svih bridova; broj komponenti = broj predstavnika.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/217/A">Ice Skating</a></td><td class="num">1200</td><td>Spoji snježne nanose u istom retku ili stupcu; odgovor je broj komponenti − 1.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/445/B">DZY Loves Chemistry</a></td><td class="num">1200</td><td>Svaka uspješna unija udvostručuje opasnost: 2<sup>n − komponenti</sup>.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/893/C">Rumor</a></td><td class="num">1300</td><td>Po skupu pamti najjeftinijeg; odgovor je zbroj minimuma po komponentama.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc177/tasks/abc177_d">ABC 177 D — Friends</a></td><td class="num">ABC D</td><td>Odgovor je veličina najveće komponente (svaki par prijatelja mora u različite grupe).</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1167/C">News Distribution</a></td><td class="num">1400</td><td>Za svakog korisnika ispiši veličinu njegove komponente.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1263/D">Secret Passwords</a></td><td class="num">1400</td><td>Union-find nad 26 slova: spoji slova iste lozinke; odgovor je broj komponenti među korištenim slovima.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc206/tasks/abc206_d">ABC 206 D — KAIBUNsyo</a></td><td class="num">ABC D</td><td>Spoji A<sub>i</sub> i A<sub>n+1−i</sub> (vrijednosti!); broj promjena = ∑ (veličina − 1).</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc097/tasks/arc097_b">ABC 097 D — Equals</a></td><td class="num">ABC D</td><td>Zamjene su bridovi; i je u redu ako su i i p<sub>i</sub> u istoj komponenti.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Zadaci (2/5)</h2>
+    
+    <table class="tasks">
+      <tr><th>Zadatak</th><th class="num">Ocjena</th><th>Natuknica</th></tr>
+            <tr><th colspan="3">Ciklusi i stabla</th></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/103/B">Cthulhu</a></td><td class="num">1500</td><td>Povezan graf s točno n bridova (jedan ciklus); provjeri obje stvari union-findom.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/977/E">Cyclic Components</a></td><td class="num">1500</td><td>Komponenta je ciklus ⇔ svi stupnjevi su 2 i broj bridova = broj vrhova.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc292/tasks/abc292_d">ABC 292 D — Unicyclic Components</a></td><td class="num">ABC D</td><td>Po skupu brojač bridova; uvjet: bridova = vrhova u svakoj komponenti.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/771/A">Bear and Friendship Condition</a></td><td class="num">1500</td><td>Svaka komponenta mora biti klika: bridova = k(k − 1)/2. Pazi na 64-bitne brojeve.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/505/B">Mr. Kitayuta&#x27;s Colorful Graph</a></td><td class="num">1400</td><td>Za svaku boju zasebna union-find struktura; za upit (u, v) prebroji boje u kojima su spojeni.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/744/A">Hongcow Builds A Nation</a></td><td class="num">1500</td><td>Komponente s vladom su klike; sve ostale pripoji najvećoj vladinoj komponenti.</td></tr>
+      <tr><th colspan="3">Brisanje unatrag</th></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc120/tasks/abc120_d">ABC 120 D — Decayed Bridges</a></td><td class="num">ABC D</td><td>Unatrag dodaj mostove; neudobnost pada za |A| · |B| pri svakom spajanju.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/722/C">Destroying Array</a></td><td class="num">1600</td><td>Unatrag vraćaj elemente, spajaj sa susjedima i drži zbroj po segmentu; odgovor je najveći zbroj.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc264/tasks/abc264_e">ABC 264 E — Blackout 2</a></td><td class="num">ABC E</td><td>Sve elektrane spoji u jedan super-vrh; unatrag dodaj vodove i prati veličinu super-komponente.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Zadaci (3/5)</h2>
+    
+    <table class="tasks">
+      <tr><th>Zadatak</th><th class="num">Ocjena</th><th>Natuknica</th></tr>
+            <tr><th colspan="3">Podaci po skupu i više struktura</th></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc157/tasks/abc157_d">ABC 157 D — Friend Suggestions</a></td><td class="num">ABC D</td><td>Kandidati = veličina komponente − 1 − prijatelji − blokirani u istoj komponenti.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc049/tasks/arc065_b">ABC 049 D — Connectivity</a></td><td class="num">ABC D</td><td>Dvije strukture (ceste, pruge); grupiraj gradove po paru predstavnika (map).</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc259/tasks/abc259_d">ABC 259 D — Circumferences</a></td><td class="num">ABC D</td><td>Vrhovi su kružnice; spoji one koje se sijeku ili dodiruju (usporedi udaljenost središta s r₁ ± r₂).</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc304/tasks/abc304_e">ABC 304 E — Good Graph</a></td><td class="num">ABC E</td><td>Zabranjeni parovi → parovi predstavnika u setu; upit je dobar ako par predstavnika nije zabranjen.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/277/A">Learning Languages</a></td><td class="num">1600</td><td>Spoji zaposlenike preko zajedničkog jezika; odgovor je komponenti − 1 (posebno: nitko ne zna jezik).</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/741/B">Arpa&#x27;s weak amphitheater and Mehrdad&#x27;s valuable Hoses</a></td><td class="num">1600</td><td>Komponente → grupe; u svakoj biraš cijelu grupu ili jednog člana; knapsack po grupama.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Zadaci (4/5)</h2>
+    
+    <table class="tasks">
+      <tr><th>Zadatak</th><th class="num">Ocjena</th><th>Natuknica</th></tr>
+            <tr><th colspan="3">Kruskal i sortirani bridovi</th></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc214/tasks/abc214_d">ABC 214 D — Sum of Maximum Weights</a></td><td class="num">ABC D</td><td>Bridove dodaj od najlakšeg; brid težine w doprinosi w · |A| · |B| parova koje upravo spaja.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1213/G">Path Queries</a></td><td class="num">1700</td><td>Sortiraj bridove i upite; za upit q dodaj sve bridove ≤ q i broji parove ∑ C(veličina, 2).</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc235/tasks/abc235_e">ABC 235 E — MST + 1</a></td><td class="num">ABC E</td><td>Upite obradi zajedno s bridovima u sortiranom redu; upit je u MST-u ⇔ krajevi još nisu spojeni.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc218/tasks/abc218_e">ABC 218 E — Destruction</a></td><td class="num">ABC E</td><td>Kruskal po rastućoj nagradi: brid s negativnom nagradom uvijek zadrži; pozitivan ukloni ako ne treba za povezanost.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1133/F1">Spanning Tree with Maximum Degree</a></td><td class="num">1600</td><td>Prvo spoji sve bridove vrha najvećeg stupnja, zatim Kruskal po ostalima.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1209/D">Cow and Snacks</a></td><td class="num">1700</td><td>Gost = brid između dvije grickalice; gost ostaje gladan ⇔ brid zatvara ciklus.</td></tr>
+      <tr><th colspan="3">Paritet i težine</th></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc282/tasks/abc282_d">ABC 282 D — Make Bipartite 2</a></td><td class="num">ABC D</td><td>Provjeri bipartitnost po komponenti (paritet); prebroji parove različite boje i parove iz različitih komponenti, oduzmi M.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc087/tasks/arc090_b">ABC 087 D — People on a Line</a></td><td class="num">ABC D</td><td>Težinski union-find: uvjet x<sub>R</sub> − x<sub>L</sub> = D; nekonzistentan uvjet = NE.</td></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc328/tasks/abc328_f">ABC 328 F — Good Set Query</a></td><td class="num">ABC F</td><td>Isto kao gore: dodaj uvjet ako je konzistentan s dosadašnjima.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Zadaci (5/5)</h2>
+    <p class="small muted">Izazovi: jedan AtCoder F i tri zadatka ocjene 1900.</p>
+    <table class="tasks">
+      <tr><th>Zadatak</th><th class="num">Ocjena</th><th>Natuknica</th></tr>
+            <tr><th colspan="3">Izazovi</th></tr>
+      <tr><td><a href="https://atcoder.jp/contests/abc183/tasks/abc183_f">ABC 183 F — Confluence</a></td><td class="num">ABC F</td><td>Po predstavniku map razred → broj; pri uniji manji map prelij u veći (malo u veliko).</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/25/D">Roads not only in Berland</a></td><td class="num">1900</td><td>Bridovi koji zatvaraju ciklus su višak; svaki od njih premjesti tako da spoji dvije komponente.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/1245/D">Shichikuji and Power Grid</a></td><td class="num">1900</td><td>Dodaj virtualni vrh „elektrana” s bridovima cijene c<sub>i</sub>; Kruskal na svim bridovima.</td></tr>
+      <tr><td><a href="https://codeforces.com/problemset/problem/817/D">Imbalanced Array</a></td><td class="num">1900</td><td>Obradi vrijednosti rastuće: svaki element spaja susjedne već aktivne segmente; doprinos = vrijednost · broj podnizova s tim maksimumom. Isto za minimum.</td></tr>
+    </table>
+  </section>
+
+  <section>
+    <h2>Izvori i literatura</h2>
+    <ul class="small">
+      <li>Maja Milas, <a href="https://materijali.xfer.hr/docs/algoritmi-nad-grafovima-1/union-find-struktura">Union-find struktura</a> i <a href="https://materijali.xfer.hr/docs/algoritmi-nad-grafovima-1/mst">MST</a> — NatPro, X.FER (izvorni materijali 2. i 5. poglavlja).</li>
+      <li><a href="https://cp-algorithms.com/data_structures/disjoint_set_union.html">cp-algorithms: Disjoint Set Union</a> — varijante, proširenja i zadaci.</li>
+      <li>B. A. Galler, M. J. Fischer, <em>An improved equivalence algorithm</em>, CACM 1964 — izvorna struktura.</li>
+      <li>J. E. Hopcroft, J. D. Ullman, <em>Set merging algorithms</em>, SIAM J. Comput. 1973 — granica <span class="m">O(m log* n)</span>.</li>
+      <li>R. E. Tarjan, <em>Efficiency of a good but not linear set union algorithm</em>, J. ACM 1975 — granica <span class="m">O(m α(n))</span>.</li>
+      <li>R. E. Tarjan, J. van Leeuwen, <em>Worst-case analysis of set union algorithms</em>, J. ACM 1984 — sve varijante kompresije.</li>
+      <li>M. Fredman, M. Saks, <em>The cell probe complexity of dynamic data structures</em>, STOC 1989 — donja granica <span class="m">Ω(α(n))</span>.</li>
+      <li>R. Seidel, M. Sharir, <em>Top-down analysis of path compression</em>, SIAM J. Comput. 2005 — kratki moderni dokaz.</li>
+      <li>Cormen, Leiserson, Rivest, Stein, <em>Introduction to Algorithms</em> — poglavlje o strukturama disjunktnih skupova.</li>
+      <li>Prezentacija: <a href="https://revealjs.com">reveal.js</a> (MIT); vizualizacije su vlastite, u mapi <code>assets/viz/</code>.</li>
+    </ul>
+  </section>
+</section>
+
+</div><!-- .slides -->
+<div class="deck-footer">Strukture podataka i algoritmi · Predavanje 2: Union-find</div>
+</div><!-- .reveal -->
+
+<script src="vendor/reveal/reveal.js"></script>
+<script src="vendor/reveal/plugin/highlight.js"></script>
+<script src="vendor/reveal/plugin/notes.js"></script>
+<script src="vendor/reveal/plugin/zoom.js"></script>
+<script src="assets/viz/common.js"></script>
+<script src="assets/viz/labels.js"></script>
+<script src="assets/viz/dsu.js"></script>
+<script src="assets/viz/bench.js"></script>
+<script src="assets/viz/kruskal.js"></script>
+<script src="assets/viz/offline.js"></script>
+<script src="assets/viz/parity.js"></script>
+<script src="assets/main.js"></script>
+</body>
+</html>

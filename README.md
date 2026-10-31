@@ -27,3 +27,4 @@ Inside a lecture directory you will find:
 | # | Lecture | Directory |
 |---|---------|-----------|
 | 1 | Sorting and Binary Search – sorting, binary and ternary search, search as asking questions (information theory), bitonic sort, which comparisons determine the order | [01-sorting-and-binary-search](01-sorting-and-binary-search/) |
+| 2 | Union-Find – disjoint sets, union by size, path compression, amortized analysis and the inverse Ackermann bound, Kruskal, offline deletions, parity/weighted DSU, small-to-large, rollback | [02-union-find](02-union-find/) |
